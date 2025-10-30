@@ -148,7 +148,7 @@ def weights_init(m):
             nn.init.zeros_(m.bias.data)
 
 
-@torch.jit.script
+# @torch.jit.script  # Disabled for RTX 4090 compatibility
 def fused_mean_variance(x, weight):
     mean = torch.sum(x*weight, dim=2, keepdim=True)
     # key_frame = x[...,x.shape[2]//2,:].unsqueeze(-2)

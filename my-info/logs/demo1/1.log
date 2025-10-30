@@ -1,0 +1,77 @@
+(rstab) root@4fa08ec8536b:~/RStab/Deep3D# python geometry_optimizer.py --video_path ../input/0.avi --output_dir ../output/Deep3D --name 0.avi
+images of ../input/0.avi saved in ../output/Deep3D/0.avi/images
+Video path:  ../input/0.avi
+Images path:  ../output/Deep3D/0.avi/images
+Transfor finished!
+=> preparing optical flow. it would take a while.
+../output/Deep3D/0.avi/images/*.png
+247
+/root/RStab/Deep3D/video_pwc.py:83: DeprecationWarning: Starting with ImageIO v3 the behavior of this function will switch to that of iio.v3.imread. To keep the current behavior (and make this warning dissapear) use `import imageio.v2 as imageio` or call `imageio.v2.imread` directly.
+  frames = [imageio.imread(frame_names[j]) for j in range(batch_begin, batch_end)]
+/root/RStab/Deep3D/video_pwc.py:55: UserWarning: volatile was removed and now has no effect. Use `with torch.no_grad():` instead.
+  im_all_fwd = torch.autograd.Variable(torch.cat(im_all_fwd, 0).cuda(), volatile=True)
+/root/RStab/Deep3D/video_pwc.py:56: UserWarning: volatile was removed and now has no effect. Use `with torch.no_grad():` instead.
+  im_all_bwd = torch.autograd.Variable(torch.cat(im_all_bwd, 0).cuda(), volatile=True)
+Traceback (most recent call last):
+  File "/root/RStab/Deep3D/video_pwc.py", line 84, in <module>
+    flow_fwd, flow_bwd = process_batch(frames, interval)
+  File "/root/RStab/Deep3D/video_pwc.py", line 73, in process_batch
+    return pass_model(im_all_fwd), pass_model(im_all_bwd)
+  File "/root/RStab/Deep3D/video_pwc.py", line 60, in pass_model
+    flo = net(im_all)
+  File "/root/miniconda3/envs/rstab/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1110, in _call_impl
+    return forward_call(*input, **kwargs)
+  File "/root/RStab/Deep3D/models/pwcNet.py", line 294, in forward
+    objectEstimate = self.moduleSix(tensorFirst[-1], tensorSecond[-1], None)
+  File "/root/miniconda3/envs/rstab/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1110, in _call_impl
+    return forward_call(*input, **kwargs)
+  File "/root/RStab/Deep3D/models/pwcNet.py", line 219, in forward
+    tensorVolume = self.moduleCorreleaky(self.moduleCorrelation(tensorFirst, tensorSecond))
+  File "/root/miniconda3/envs/rstab/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1110, in _call_impl
+    return forward_call(*input, **kwargs)
+  File "/root/RStab/Deep3D/models/correlation/correlation.py", line 239, in forward
+    cor = correlation(tensorFirst, tensorSecond)
+  File "/root/RStab/Deep3D/models/correlation/correlation.py", line 170, in forward
+    cupy_launch('kernel_Correlation_rearrange', cupy_kernel('kernel_Correlation_rearrange', {
+  File "cupy/_util.pyx", line 67, in cupy._util.memoize.decorator.ret
+  File "/root/RStab/Deep3D/models/correlation/correlation.py", line 142, in cupy_launch
+    return cupy.cuda.compile_with_cache(strKernel).get_function(strFunction)
+  File "/root/miniconda3/envs/rstab/lib/python3.10/site-packages/cupy/cuda/__init__.py", line 84, in __getattr__
+    raise AttributeError(
+AttributeError: module 'cupy.cuda' has no attribute 'compile_with_cache'
+Traceback (most recent call last):
+  File "/root/RStab/Deep3D/geometry_optimizer.py", line 192, in <module>
+    geo_optim = GeometryOptimizer(opt)
+  File "/root/RStab/Deep3D/geometry_optimizer.py", line 39, in __init__
+    self.seq_io = SequenceIO(opt, preprocess=True)
+  File "/root/RStab/Deep3D/sequence_io.py", line 28, in __init__
+    self.generate_flows()
+  File "/root/RStab/Deep3D/sequence_io.py", line 72, in generate_flows
+    assert ret == 0, "Failed to run PWC-Net, please check the environment of PWC-Net"
+AssertionError: Failed to run PWC-Net, please check the environment of PWC-Net
+(rstab) root@4fa08ec8536b:~/RStab/Deep3D# 
+
+
+[0] 0:docker*                                                                      "root@4fa08ec8536b: ~/" 07:09 30-Oct-25
+(rstab) root@4fa08ec8536b:~/RStab/Deep3D# 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
