@@ -46,6 +46,7 @@ gdown --fuzzy "https://drive.google.com/file/d/1q3QM1damtvHLukhIOIAdv9IKm646Oj11
 wget --no-check-certificate "https://drive.google.com/uc?export=download&id=1q3QM1damtvHLukhIOIAdv9IKm646Oj11&confirm=t" -O checkpoint.zip
 
 # 解压
+apt install unzip -y
 unzip checkpoint.zip
 
 # 验证文件

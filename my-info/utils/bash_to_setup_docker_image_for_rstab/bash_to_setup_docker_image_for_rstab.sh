@@ -84,6 +84,52 @@ log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
+# 修复 dpkg 错误 (如果存在)
+fix_dpkg_errors() {
+    # 检查是否有 dpkg 错误
+    if dpkg --configure -a 2>&1 | grep -q "error"; then
+        log_warn "检测到 dpkg 错误，尝试修复..."
+        
+        # 修复 /etc/environment 中的错误
+        if [ -f /etc/environment ]; then
+            # 备份原文件
+            cp /etc/environment /etc/environment.bak 2>/dev/null || true
+            # 移除包含 ssh-ed25519 的错误行
+            sed -i '/ssh-ed25519/d' /etc/environment 2>/dev/null || true
+        fi
+        
+        # 重新配置 dpkg
+        dpkg --configure -a 2>/dev/null || true
+        
+        log_info "dpkg 修复完成"
+    fi
+}
+
+# 安装必要的系统工具
+install_system_tools() {
+    log_info "检查并安装必要的系统工具..."
+    
+    # 先修复可能的 dpkg 错误
+    fix_dpkg_errors
+    
+    # 安装 unzip (如果没有)
+    if ! command -v unzip &> /dev/null; then
+        log_info "安装 unzip..."
+        apt-get update -qq 2>/dev/null || true
+        apt-get install -y unzip 2>/dev/null || {
+            # 如果安装失败，尝试修复后重试
+            fix_dpkg_errors
+            apt-get install -y unzip
+        }
+    fi
+    
+    # 安装 gdown (如果没有)
+    if ! command -v gdown &> /dev/null; then
+        log_info "安装 gdown..."
+        pip install gdown -q 2>/dev/null || pip3 install gdown -q 2>/dev/null || true
+    fi
+}
+
 # 检查 Docker 和 NVIDIA Docker
 check_prerequisites() {
     log_info "检查系统环境..."
@@ -100,6 +146,9 @@ check_prerequisites() {
     
     log_info "NVIDIA GPU 信息:"
     nvidia-smi --query-gpu=name,memory.total,driver_version --format=csv,noheader
+    
+    # 安装必要工具
+    install_system_tools
     
     log_info "系统环境检查通过"
 }
