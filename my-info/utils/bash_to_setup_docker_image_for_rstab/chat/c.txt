@@ -83,3 +83,24 @@ l. please use this @jiangbo-1min.mp4 as demo
 n. @c.txt#L64 is   RStab checkpoint downaload url, @c.txt#L66 is for MonST3R
 m. i will upload this @bash_to_setup_docker_image_for_rstab , but only use @bash_to_setup_docker_image_for_rstab.sh to do everything
 o. please add usage in comment   at the top of @bash_to_setup_docker_image_for_rstab.sh 
+
+
+
+# 1. 上传整个文件夹到服务器 /root/
+# 2. 进入目录
+cd /root/bash_to_setup_docker_image_for_rstab
+
+# 3. 添加执行权限
+chmod +x bash_to_setup_docker_image_for_rstab.sh
+
+# 4. 构建 Docker 镜像
+./bash_to_setup_docker_image_for_rstab.sh build
+
+# 5. 运行 Demo (Deep3D 模式)
+./bash_to_setup_docker_image_for_rstab.sh demo
+
+# 6. 或使用 MonST3R 模式
+./bash_to_setup_docker_image_for_rstab.sh demo-monst3r
+
+# 7. 交互模式进入容器
+./bash_to_setup_docker_image_for_rstab.sh run	

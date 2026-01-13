@@ -164,16 +164,100 @@ create_directories() {
     log_info "Checkpoint 目录: $HOST_CHECKPOINTS_DIR"
 }
 
+# 下载 RStab checkpoint
+download_rstab_checkpoint() {
+    local RSTAB_DIR="$HOST_CHECKPOINTS_DIR/RStab"
+    
+    # 检查是否已存在
+    if [ -d "$RSTAB_DIR" ] && [ -n "$(ls -A $RSTAB_DIR/*.pth 2>/dev/null)" ]; then
+        log_info "RStab Checkpoint 已存在，跳过下载"
+        return 0
+    fi
+    
+    log_info "下载 RStab Checkpoint..."
+    mkdir -p "$RSTAB_DIR"
+    cd "$RSTAB_DIR"
+    
+    # 使用 gdown 下载
+    if gdown --fuzzy "https://drive.google.com/file/d/1q3QM1damtvHLukhIOIAdv9IKm646Oj11/view" -O checkpoint.zip; then
+        log_info "下载成功，解压中..."
+        unzip -o checkpoint.zip
+        rm -f checkpoint.zip
+        log_info "RStab Checkpoint 下载完成"
+    else
+        log_warn "gdown 下载失败，尝试 wget..."
+        wget --no-check-certificate "https://drive.google.com/uc?export=download&id=1q3QM1damtvHLukhIOIAdv9IKm646Oj11&confirm=t" -O checkpoint.zip
+        if [ -f checkpoint.zip ]; then
+            unzip -o checkpoint.zip
+            rm -f checkpoint.zip
+            log_info "RStab Checkpoint 下载完成"
+        else
+            log_error "RStab Checkpoint 下载失败!"
+            log_error "请手动下载: https://drive.google.com/file/d/1q3QM1damtvHLukhIOIAdv9IKm646Oj11/view"
+            log_error "解压到: $RSTAB_DIR/"
+            return 1
+        fi
+    fi
+}
+
+# 下载 MonST3R checkpoint
+download_monst3r_checkpoint() {
+    local MONST3R_DIR="$HOST_CHECKPOINTS_DIR/MonST3R"
+    local MONST3R_FILE="MonST3R_PO-TA-S-W_ViTLarge_BaseDecoder_512_dpt.pth"
+    
+    # 检查是否已存在
+    if [ -f "$MONST3R_DIR/$MONST3R_FILE" ]; then
+        log_info "MonST3R Checkpoint 已存在，跳过下载"
+        return 0
+    fi
+    
+    log_info "下载 MonST3R Checkpoint..."
+    mkdir -p "$MONST3R_DIR"
+    cd "$MONST3R_DIR"
+    
+    # 使用 gdown 下载
+    if gdown --fuzzy "https://drive.google.com/file/d/1e-2lGrnxcQXIqjOn-UoIsZnV98CvjKXa/view" -O "$MONST3R_FILE"; then
+        log_info "MonST3R Checkpoint 下载完成"
+    else
+        log_warn "gdown 下载失败，尝试 wget..."
+        wget --no-check-certificate "https://drive.google.com/uc?export=download&id=1e-2lGrnxcQXIqjOn-UoIsZnV98CvjKXa&confirm=t" -O "$MONST3R_FILE"
+        if [ -f "$MONST3R_FILE" ]; then
+            log_info "MonST3R Checkpoint 下载完成"
+        else
+            log_error "MonST3R Checkpoint 下载失败!"
+            log_error "请手动下载: https://drive.google.com/file/d/1e-2lGrnxcQXIqjOn-UoIsZnV98CvjKXa/view"
+            log_error "放到: $MONST3R_DIR/$MONST3R_FILE"
+            return 1
+        fi
+    fi
+}
+
+# 下载所有 checkpoints
+download_checkpoints() {
+    log_info "检查并下载 Checkpoints..."
+    
+    # 下载 RStab checkpoint (必需)
+    download_rstab_checkpoint || {
+        log_error "RStab Checkpoint 下载失败，无法继续"
+        exit 1
+    }
+    
+    # 下载 MonST3R checkpoint (可选)
+    download_monst3r_checkpoint || {
+        log_warn "MonST3R Checkpoint 下载失败，MonST3R 模式将不可用"
+    }
+    
+    log_info "Checkpoints 准备完成"
+}
+
 # 检查 RStab checkpoint 是否存在
 check_checkpoints() {
     if [ ! -d "$HOST_CHECKPOINTS_DIR/RStab" ] || [ -z "$(ls -A $HOST_CHECKPOINTS_DIR/RStab 2>/dev/null)" ]; then
-        log_error "RStab Checkpoint 未找到!"
-        echo ""
-        echo "请下载 RStab Checkpoint:"
-        echo "  下载: https://drive.google.com/file/d/1q3QM1damtvHLukhIOIAdv9IKm646Oj11/view"
-        echo "  解压到: $HOST_CHECKPOINTS_DIR/RStab/"
-        echo ""
-        exit 1
+        log_warn "RStab Checkpoint 未找到，尝试下载..."
+        download_rstab_checkpoint || {
+            log_error "RStab Checkpoint 下载失败!"
+            exit 1
+        }
     fi
     log_info "RStab Checkpoint 已找到"
 }
@@ -182,13 +266,11 @@ check_checkpoints() {
 check_checkpoints_monst3r() {
     check_checkpoints
     if [ ! -d "$HOST_CHECKPOINTS_DIR/MonST3R" ] || [ -z "$(ls -A $HOST_CHECKPOINTS_DIR/MonST3R 2>/dev/null)" ]; then
-        log_error "MonST3R Checkpoint 未找到!"
-        echo ""
-        echo "请下载 MonST3R Checkpoint:"
-        echo "  下载: https://drive.google.com/file/d/1e-2lGrnxcQXIqjOn-UoIsZnV98CvjKXa/view"
-        echo "  放到: $HOST_CHECKPOINTS_DIR/MonST3R/MonST3R_PO-TA-S-W_ViTLarge_BaseDecoder_512_dpt.pth"
-        echo ""
-        exit 1
+        log_warn "MonST3R Checkpoint 未找到，尝试下载..."
+        download_monst3r_checkpoint || {
+            log_error "MonST3R Checkpoint 下载失败!"
+            exit 1
+        }
     fi
     log_info "MonST3R Checkpoint 已找到"
 }
@@ -218,20 +300,13 @@ build_image() {
     log_info "Docker 镜像构建完成!"
     docker images | grep "$IMAGE_NAME"
     
+    # 自动下载 checkpoints
     echo ""
-    log_warn "========== 重要: 需要手动下载 Checkpoint =========="
-    log_warn "Google Drive 下载受限，请手动下载以下文件:"
+    log_info "========== 开始下载 Checkpoints =========="
+    download_checkpoints
+    log_info "========== 构建和下载全部完成 =========="
     echo ""
-    echo "1. RStab Checkpoint:"
-    echo "   下载: https://drive.google.com/file/d/1q3QM1damtvHLukhIOIAdv9IKm646Oj11/view"
-    echo "   解压到: $HOST_CHECKPOINTS_DIR/RStab/"
-    echo "   (解压后应有 $HOST_CHECKPOINTS_DIR/RStab/*.pth 文件)"
-    echo ""
-    echo "2. MonST3R Checkpoint (可选, 仅当使用 MonST3R 模式时需要):"
-    echo "   下载: https://drive.google.com/file/d/1e-2lGrnxcQXIqjOn-UoIsZnV98CvjKXa/view"
-    echo "   放到: $HOST_CHECKPOINTS_DIR/MonST3R/MonST3R_PO-TA-S-W_ViTLarge_BaseDecoder_512_dpt.pth"
-    echo ""
-    log_warn "================================================="
+    log_info "现在可以运行: ./bash_to_setup_docker_image_for_rstab.sh demo"
 }
 
 # 运行容器 (交互模式)
