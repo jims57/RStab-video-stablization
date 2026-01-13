@@ -184,13 +184,13 @@ gdown --fuzzy "https://drive.google.com/file/d/1e-2lGrnxcQXIqjOn-UoIsZnV98CvjKXa
 
 ```bash
 # 裁剪前15秒并稳定化 (推荐用于 8GB GPU)
-./bash_to_setup_docker_image_for_rstab.sh stabilize /root/my_videos/long_video.mp4 '' 00:00:15
+./bash_to_setup_docker_image_for_rstab.sh stabilize /root/rstab_input/jiangbo-1min.mp4 '' 00:00:15
 
 # 裁剪10秒到25秒的片段
-./bash_to_setup_docker_image_for_rstab.sh stabilize /root/my_videos/long_video.mp4 00:00:10 00:00:25
+./bash_to_setup_docker_image_for_rstab.sh stabilize /root/rstab_input/jiangbo-1min.mp4 00:00:10 00:00:25
 
 # MonST3R 模式裁剪前20秒
-./bash_to_setup_docker_image_for_rstab.sh stabilize-monst3r /root/my_videos/long_video.mp4 '' 00:00:20
+./bash_to_setup_docker_image_for_rstab.sh stabilize-monst3r /root/rstab_input/jiangbo-1min.mp4 '' 00:00:20
 ```
 
 ### Case 4: 进入容器交互模式 (用于调试)
