@@ -79,7 +79,21 @@ else
     exit 1
 fi
 
+# 查找并显示稳定化后的视频
+STABILIZED_VIDEO=$(find /mnt/rstab/output/RStab/$VIDEO_NAME -name "*.mp4" 2>/dev/null | head -1)
+
 echo "========================================"
 echo "处理完成!"
-echo "输出目录: /mnt/rstab/output/"
+echo "========================================"
+echo "输出目录结构:"
+echo "  Deep3D 输出: /mnt/rstab/output/Deep3D/$VIDEO_NAME/"
+echo "  RStab 输出:  /mnt/rstab/output/RStab/$VIDEO_NAME/"
+if [ -n "$STABILIZED_VIDEO" ]; then
+    echo ""
+    echo "稳定化后的视频:"
+    echo "  $STABILIZED_VIDEO"
+    echo ""
+    echo "在服务器上查看:"
+    echo "  ls -la /root/rstab_output/RStab/$VIDEO_NAME/"
+fi
 echo "========================================"

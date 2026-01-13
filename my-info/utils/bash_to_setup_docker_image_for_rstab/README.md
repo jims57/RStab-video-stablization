@@ -126,156 +126,146 @@ gdown --fuzzy "https://drive.google.com/file/d/1e-2lGrnxcQXIqjOn-UoIsZnV98CvjKXa
 
 | 命令 | 说明 |
 |------|------|
-| `./bash_to_setup_docker_image_for_rstab.sh build` | 构建 Docker 镜像 |
-| `./bash_to_setup_docker_image_for_rstab.sh run` | 交互模式进入容器 |
-| `./bash_to_setup_docker_image_for_rstab.sh demo` | 运行 Demo (Deep3D 模式) |
-| `./bash_to_setup_docker_image_for_rstab.sh demo-monst3r` | 运行 Demo (MonST3R 模式) |
-| `./bash_to_setup_docker_image_for_rstab.sh stop` | 停止容器 |
+| `./bash_to_setup_docker_image_for_rstab.sh build` | 构建 Docker 镜像并下载 Checkpoints |
+| `./bash_to_setup_docker_image_for_rstab.sh stabilize [视频] [开始] [结束]` | 运行视频稳定化 (Deep3D 模式) |
+| `./bash_to_setup_docker_image_for_rstab.sh stabilize-monst3r [视频] [开始] [结束]` | 运行视频稳定化 (MonST3R 模式) |
+| `./bash_to_setup_docker_image_for_rstab.sh run` | 进入容器交互模式 (用于调试) |
+| `./bash_to_setup_docker_image_for_rstab.sh stop` | 停止运行中的容器 |
 | `./bash_to_setup_docker_image_for_rstab.sh clean` | 删除镜像和容器 |
-| `./bash_to_setup_docker_image_for_rstab.sh help` | 显示帮助 |
+| `./bash_to_setup_docker_image_for_rstab.sh help` | 显示帮助信息 |
 
-## 在容器内运行自定义视频
+## 视频裁剪参数
 
-```bash
-# 1. 将视频放到 /root/rstab_input/ 目录
-cp your_video.mp4 /root/rstab_input/
+由于 GPU 内存限制, 长视频可能导致 CUDA OOM 错误。可以使用裁剪参数处理视频的特定片段:
 
-# 2. 进入容器
-./bash_to_setup_docker_image_for_rstab.sh run
+| 参数 | 格式 | 说明 |
+|------|------|------|
+| 开始时间 | HH:MM:SS | 不指定则从 00:00:00 开始 |
+| 结束时间 | HH:MM:SS | 不指定则到视频结尾 |
 
-# 3. 在容器内运行
-cd /mnt/rstab
-./run_rstab.sh your_video.mp4           # Deep3D 模式
-./run_rstab.sh your_video.mp4 monst3r   # MonST3R 模式
-
-# 4. 输出结果在 /root/rstab_output/ 目录
-```
-
-## \u76ee\u5f55\u7ed3\u6784
-
-```
-/root/
-\u251c\u2500\u2500 bash_to_setup_docker_image_for_rstab/   # \u811a\u672c\u76ee\u5f55
-\u2502   \u251c\u2500\u2500 bash_to_setup_docker_image_for_rstab.sh
-\u2502   \u251c\u2500\u2500 related-files/
-\u2502   \u2502   \u251c\u2500\u2500 Dockerfile
-\u2502   \u2502   \u2514\u2500\u2500 run_rstab.sh
-\u2502   \u2514\u2500\u2500 videos/
-\u2502       \u2514\u2500\u2500 jiangbo-1min.mp4
-\u251c\u2500\u2500 rstab_input/                            # \u8f93\u5165\u89c6\u9891\u76ee\u5f55 (\u53ef\u76f4\u63a5\u8bbf\u95ee)
-\u251c\u2500\u2500 rstab_output/                           # \u8f93\u51fa\u7ed3\u679c\u76ee\u5f55 (\u53ef\u76f4\u63a5\u8bbf\u95ee)
-\u2514\u2500\u2500 rstab_checkpoints/                      # Checkpoint \u76ee\u5f55
-    \u251c\u2500\u2500 RStab/                              # RStab checkpoint (\u5fc5\u9700)
-    \u2502   \u2514\u2500\u2500 *.pth
-    \u2514\u2500\u2500 MonST3R/                            # MonST3R checkpoint (\u53ef\u9009)
-        \u2514\u2500\u2500 MonST3R_PO-TA-S-W_ViTLarge_BaseDecoder_512_dpt.pth
-```
-
-## \u547d\u4ee4\u8bf4\u660e
-
-| \u547d\u4ee4 | \u8bf4\u660e |
-|------|------|
-| `./bash_to_setup_docker_image_for_rstab.sh build` | \u6784\u5efa Docker \u955c\u50cf\u5e76\u81ea\u52a8\u4e0b\u8f7d Checkpoints |
-| `./bash_to_setup_docker_image_for_rstab.sh stabilize` | \u4f7f\u7528\u9ed8\u8ba4 demo \u89c6\u9891\u8fd0\u884c\u7a33\u5b9a\u5316 (Deep3D) |
-| `./bash_to_setup_docker_image_for_rstab.sh stabilize /path/to/video.mp4` | \u4f7f\u7528\u81ea\u5b9a\u4e49\u89c6\u9891\u8fd0\u884c\u7a33\u5b9a\u5316 (Deep3D) |
-| `./bash_to_setup_docker_image_for_rstab.sh stabilize-monst3r` | \u4f7f\u7528\u9ed8\u8ba4 demo \u89c6\u9891\u8fd0\u884c\u7a33\u5b9a\u5316 (MonST3R) |
-| `./bash_to_setup_docker_image_for_rstab.sh stabilize-monst3r /path/to/video.mp4` | \u4f7f\u7528\u81ea\u5b9a\u4e49\u89c6\u9891\u8fd0\u884c\u7a33\u5b9a\u5316 (MonST3R) |
-| `./bash_to_setup_docker_image_for_rstab.sh run` | \u8fdb\u5165\u5bb9\u5668\u4ea4\u4e92\u6a21\u5f0f (\u7528\u4e8e\u8c03\u8bd5) |
-| `./bash_to_setup_docker_image_for_rstab.sh stop` | \u505c\u6b62\u8fd0\u884c\u4e2d\u7684\u5bb9\u5668 |
-| `./bash_to_setup_docker_image_for_rstab.sh clean` | \u5220\u9664\u955c\u50cf\u548c\u5bb9\u5668 |
-| `./bash_to_setup_docker_image_for_rstab.sh help` | \u663e\u793a\u5e2e\u52a9\u4fe1\u606f |
-
-## \u8be6\u7ec6\u4f7f\u7528\u793a\u4f8b
-
-### Case 1: \u4f7f\u7528\u9ed8\u8ba4 Demo \u89c6\u9891 (jiangbo-1min.mp4)
+**裁剪示例:**
 
 ```bash
-# Deep3D \u6a21\u5f0f (\u63a8\u8350)
+# Case A: 只指定结束时间 - 裁剪前15秒 (从00:00:00到00:00:15)
+./bash_to_setup_docker_image_for_rstab.sh stabilize /path/to/video.mp4 '' 00:00:15
+
+# Case B: 只指定开始时间 - 从10秒开始到视频结尾
+./bash_to_setup_docker_image_for_rstab.sh stabilize /path/to/video.mp4 00:00:10 ''
+
+# Case C: 同时指定开始和结束时间 - 裁剪5秒到20秒的片段
+./bash_to_setup_docker_image_for_rstab.sh stabilize /path/to/video.mp4 00:00:05 00:00:20
+```
+
+## 详细使用示例
+
+### Case 1: 使用默认 Demo 视频
+
+```bash
+# Deep3D 模式 (推荐)
 ./bash_to_setup_docker_image_for_rstab.sh stabilize
 
-# MonST3R \u6a21\u5f0f
+# MonST3R 模式
 ./bash_to_setup_docker_image_for_rstab.sh stabilize-monst3r
 ```
 
-### Case 2: \u4f7f\u7528\u81ea\u5b9a\u4e49\u89c6\u9891
+### Case 2: 使用自定义视频
 
 ```bash
-# Deep3D \u6a21\u5f0f - \u6307\u5b9a\u89c6\u9891\u7edd\u5bf9\u8def\u5f84
+# Deep3D 模式 - 指定视频绝对路径
 ./bash_to_setup_docker_image_for_rstab.sh stabilize /root/my_videos/shaky_video.mp4
 
-# MonST3R \u6a21\u5f0f - \u6307\u5b9a\u89c6\u9891\u7edd\u5bf9\u8def\u5f84
+# MonST3R 模式 - 指定视频绝对路径
 ./bash_to_setup_docker_image_for_rstab.sh stabilize-monst3r /root/my_videos/shaky_video.mp4
 
-# \u89c6\u9891\u4f1a\u81ea\u52a8\u590d\u5236\u5230 /root/rstab_input/ \u76ee\u5f55
+# 视频会自动复制到 /root/rstab_input/ 目录
 ```
 
-### Case 3: \u8fdb\u5165\u5bb9\u5668\u4ea4\u4e92\u6a21\u5f0f (\u7528\u4e8e\u8c03\u8bd5)
-
-`run` \u547d\u4ee4\u7528\u4e8e\u8fdb\u5165 Docker \u5bb9\u5668\u7684\u4ea4\u4e92\u5f0f bash shell\uff0c\u9002\u7528\u4e8e:
-- \u8c03\u8bd5\u95ee\u9898
-- \u67e5\u770b\u5bb9\u5668\u5185\u90e8\u6587\u4ef6
-- \u624b\u52a8\u8fd0\u884c\u547d\u4ee4
-- \u68c0\u67e5\u73af\u5883\u914d\u7f6e
+### Case 3: 使用视频裁剪 (避免 GPU 内存不足)
 
 ```bash
-# \u8fdb\u5165\u5bb9\u5668
+# 裁剪前15秒并稳定化 (推荐用于 8GB GPU)
+./bash_to_setup_docker_image_for_rstab.sh stabilize /root/my_videos/long_video.mp4 '' 00:00:15
+
+# 裁剪10秒到25秒的片段
+./bash_to_setup_docker_image_for_rstab.sh stabilize /root/my_videos/long_video.mp4 00:00:10 00:00:25
+
+# MonST3R 模式裁剪前20秒
+./bash_to_setup_docker_image_for_rstab.sh stabilize-monst3r /root/my_videos/long_video.mp4 '' 00:00:20
+```
+
+### Case 4: 进入容器交互模式 (用于调试)
+
+`run` 命令用于进入 Docker 容器的交互式 bash shell, 适用于:
+- 调试问题
+- 查看容器内部文件
+- 手动运行命令
+- 检查环境配置
+
+```bash
+# 进入容器
 ./bash_to_setup_docker_image_for_rstab.sh run
 
-# \u8fdb\u5165\u540e\u4f60\u4f1a\u770b\u5230 bash \u63d0\u793a\u7b26\uff0c\u53ef\u4ee5\u624b\u52a8\u8fd0\u884c\u547d\u4ee4:
+# 进入后你会看到 bash 提示符, 可以手动运行命令:
 cd /mnt/rstab
-ls -la                                    # \u67e5\u770b\u6587\u4ef6\u7ed3\u6784
-./run_rstab.sh video.mp4                  # \u624b\u52a8\u8fd0\u884c\u7a33\u5b9a\u5316
-./run_rstab.sh video.mp4 monst3r          # MonST3R \u6a21\u5f0f
-exit                                      # \u9000\u51fa\u5bb9\u5668
+ls -la                                    # 查看文件结构
+./run_rstab.sh video.mp4                  # 手动运行稳定化
+./run_rstab.sh video.mp4 monst3r          # MonST3R 模式
+exit                                      # 退出容器
 ```
 
-### Case 4: \u67e5\u770b\u8f93\u51fa\u7ed3\u679c
+### Case 5: 查看输出结果
 
-\u8f93\u51fa\u7ed3\u679c\u76f4\u63a5\u5728\u670d\u52a1\u5668\u4e0a\u53ef\u89c1\uff0c\u65e0\u9700\u8fdb\u5165\u5bb9\u5668:
+输出结果直接在服务器上可见, 无需进入容器:
 
 ```bash
-# \u67e5\u770b\u8f93\u51fa\u76ee\u5f55
+# 查看输出目录
 ls -la /root/rstab_output/
 
-# \u67e5\u770b Deep3D \u8f93\u51fa
+# 查看 Deep3D 输出
 ls -la /root/rstab_output/Deep3D/
 
-# \u67e5\u770b RStab \u6700\u7ec8\u7ed3\u679c
+# 查看 RStab 最终结果 (稳定化后的视频)
 ls -la /root/rstab_output/RStab/
 ```
 
-## GPU \u5185\u5b58\u8981\u6c42
+## GPU 内存要求
 
-| GPU | \u663e\u5b58 | \u5efa\u8bae\u89c6\u9891\u65f6\u957f |
+| GPU | 显存 | 建议视频时长 |
 |-----|------|--------------|
-| RTX 3070 | 8GB | < 30\u79d2 |
-| RTX 3080 | 10GB | < 45\u79d2 |
-| RTX 3090 / A10 | 24GB | < 2\u5206\u949f |
-| A100 | 40GB/80GB | \u66f4\u957f\u89c6\u9891 |
+| RTX 3070 | 8GB | < 30秒 |
+| RTX 3080 | 10GB | < 45秒 |
+| RTX 3090 / A10 | 24GB | < 2分钟 |
+| A100 | 40GB/80GB | 更长视频 |
 
-\u5982\u679c\u9047\u5230 `CUDA out of memory` \u9519\u8bef\uff0c\u8bf7\u5c1d\u8bd5:
-1. \u4f7f\u7528\u66f4\u77ed\u7684\u89c6\u9891
-2. \u4f7f\u7528\u66f4\u5927\u663e\u5b58\u7684 GPU
-3. \u964d\u4f4e\u89c6\u9891\u5206\u8fa8\u7387
+如果遇到 `CUDA out of memory` 错误, 请尝试:
+1. 使用更短的视频
+2. 使用更大显存的 GPU
+3. 降低视频分辨率
 
-## \u6545\u969c\u6392\u9664
+## 故障排除
 
-### \u95ee\u9898: CUDA out of memory
+### 问题: CUDA out of memory
 
 ```
 torch.OutOfMemoryError: CUDA out of memory
 ```
 
-**\u89e3\u51b3\u65b9\u6848**: \u89c6\u9891\u592a\u957f\uff0c\u8bf7\u4f7f\u7528\u66f4\u77ed\u7684\u89c6\u9891 (\u5efa\u8bae <30\u79d2 \u5bf9\u4e8e 8GB GPU)
+**解决方案**: 视频太长, 请使用更短的视频 (建议 <30秒 对于 8GB GPU)
 
-### \u95ee\u9898: poses.npy not found
+可以用 ffmpeg 裁剪视频:
+```bash
+# 裁剪前20秒
+ffmpeg -i input.mp4 -t 20 -c copy output_20s.mp4
+```
+
+### 问题: poses.npy not found
 
 ```
 FileNotFoundError: No such file or directory: '../output/Deep3D/xxx/poses.npy'
 ```
 
-**\u89e3\u51b3\u65b9\u6848**: Deep3D \u9884\u5904\u7406\u5931\u8d25 (\u901a\u5e38\u662f GPU \u5185\u5b58\u4e0d\u8db3)\uff0c\u8bf7\u4f7f\u7528\u66f4\u77ed\u7684\u89c6\u9891
+**解决方案**: Deep3D 预处理失败 (通常是 GPU 内存不足), 请使用更短的视频
 
-### \u95ee\u9898: Checkpoint \u4e0b\u8f7d\u5931\u8d25
+### 问题: Checkpoint 下载失败
 
-\u5982\u679c\u81ea\u52a8\u4e0b\u8f7d\u5931\u8d25\uff0c\u8bf7\u53c2\u8003\u4e0a\u65b9 "\u624b\u52a8\u4e0b\u8f7d Checkpoints" \u90e8\u5206
+如果自动下载失败, 请参考上方 "手动下载 Checkpoints" 部分

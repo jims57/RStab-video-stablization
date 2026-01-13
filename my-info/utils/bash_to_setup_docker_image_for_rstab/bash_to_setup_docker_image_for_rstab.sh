@@ -350,11 +350,51 @@ copy_custom_video() {
     fi
 }
 
+# 裁剪视频 (使用 ffmpeg)
+# 参数: $1=输入视频, $2=输出视频, $3=开始时间, $4=结束时间
+clip_video() {
+    local INPUT_VIDEO="$1"
+    local OUTPUT_VIDEO="$2"
+    local START_TIME="$3"
+    local END_TIME="$4"
+    
+    local FFMPEG_ARGS=""
+    
+    # 构建 ffmpeg 参数
+    if [ -n "$START_TIME" ]; then
+        FFMPEG_ARGS="$FFMPEG_ARGS -ss $START_TIME"
+    fi
+    if [ -n "$END_TIME" ]; then
+        FFMPEG_ARGS="$FFMPEG_ARGS -to $END_TIME"
+    fi
+    
+    log_info "裁剪视频: $INPUT_VIDEO"
+    if [ -n "$START_TIME" ]; then
+        log_info "  开始时间: $START_TIME"
+    fi
+    if [ -n "$END_TIME" ]; then
+        log_info "  结束时间: $END_TIME"
+    fi
+    
+    # 使用 ffmpeg 裁剪视频 (保持原始编码)
+    ffmpeg -y $FFMPEG_ARGS -i "$INPUT_VIDEO" -c copy "$OUTPUT_VIDEO" 2>/dev/null
+    
+    if [ $? -eq 0 ]; then
+        log_info "视频裁剪完成: $OUTPUT_VIDEO"
+    else
+        log_error "视频裁剪失败"
+        exit 1
+    fi
+}
+
 # 运行视频稳定化 (Deep3D 模式)
-# 参数: $1 = 视频文件路径 (可选, 默认使用 jiangbo-1min.mp4)
+# 参数: $1=视频文件路径, $2=开始时间(HH:MM:SS), $3=结束时间(HH:MM:SS)
 run_stabilize() {
     local VIDEO_PATH="$1"
+    local START_TIME="$2"
+    local END_TIME="$3"
     local VIDEO_NAME
+    local CLIPPED_VIDEO_NAME
     
     check_prerequisites
     create_directories
@@ -370,6 +410,23 @@ run_stabilize() {
         copy_custom_video "$VIDEO_PATH"
         VIDEO_NAME=$(basename "$VIDEO_PATH")
         log_info "使用自定义视频: $VIDEO_NAME"
+    fi
+    
+    # 如果指定了裁剪参数, 先裁剪视频
+    if [ -n "$START_TIME" ] || [ -n "$END_TIME" ]; then
+        local BASE_NAME="${VIDEO_NAME%.*}"
+        local EXT="${VIDEO_NAME##*.}"
+        local TIME_SUFFIX=""
+        if [ -n "$START_TIME" ]; then
+            TIME_SUFFIX="${TIME_SUFFIX}_from${START_TIME//:/}"
+        fi
+        if [ -n "$END_TIME" ]; then
+            TIME_SUFFIX="${TIME_SUFFIX}_to${END_TIME//:/}"
+        fi
+        CLIPPED_VIDEO_NAME="${BASE_NAME}${TIME_SUFFIX}.${EXT}"
+        
+        clip_video "$HOST_INPUT_DIR/$VIDEO_NAME" "$HOST_INPUT_DIR/$CLIPPED_VIDEO_NAME" "$START_TIME" "$END_TIME"
+        VIDEO_NAME="$CLIPPED_VIDEO_NAME"
     fi
     
     # 停止已存在的容器
@@ -395,10 +452,13 @@ run_stabilize() {
 }
 
 # 运行视频稳定化 (MonST3R 模式)
-# 参数: $1 = 视频文件路径 (可选, 默认使用 jiangbo-1min.mp4)
+# 参数: $1=视频文件路径, $2=开始时间(HH:MM:SS), $3=结束时间(HH:MM:SS)
 run_stabilize_monst3r() {
     local VIDEO_PATH="$1"
+    local START_TIME="$2"
+    local END_TIME="$3"
     local VIDEO_NAME
+    local CLIPPED_VIDEO_NAME
     
     check_prerequisites
     create_directories
@@ -414,6 +474,23 @@ run_stabilize_monst3r() {
         copy_custom_video "$VIDEO_PATH"
         VIDEO_NAME=$(basename "$VIDEO_PATH")
         log_info "使用自定义视频: $VIDEO_NAME"
+    fi
+    
+    # 如果指定了裁剪参数, 先裁剪视频
+    if [ -n "$START_TIME" ] || [ -n "$END_TIME" ]; then
+        local BASE_NAME="${VIDEO_NAME%.*}"
+        local EXT="${VIDEO_NAME##*.}"
+        local TIME_SUFFIX=""
+        if [ -n "$START_TIME" ]; then
+            TIME_SUFFIX="${TIME_SUFFIX}_from${START_TIME//:/}"
+        fi
+        if [ -n "$END_TIME" ]; then
+            TIME_SUFFIX="${TIME_SUFFIX}_to${END_TIME//:/}"
+        fi
+        CLIPPED_VIDEO_NAME="${BASE_NAME}${TIME_SUFFIX}.${EXT}"
+        
+        clip_video "$HOST_INPUT_DIR/$VIDEO_NAME" "$HOST_INPUT_DIR/$CLIPPED_VIDEO_NAME" "$START_TIME" "$END_TIME"
+        VIDEO_NAME="$CLIPPED_VIDEO_NAME"
     fi
     
     # 停止已存在的容器
@@ -459,23 +536,30 @@ show_help() {
     echo ""
     echo "RStab Docker 自动化构建和运行脚本"
     echo ""
-    echo "用法: $0 [命令] [视频路径]"
+    echo "用法: $0 [命令] [视频路径] [开始时间] [结束时间]"
     echo ""
     echo "命令:"
-    echo "  build                    - 构建 Docker 镜像并下载 Checkpoints"
-    echo "  run                      - 运行 Docker 容器 (交互模式, 用于调试)"
-    echo "  stabilize [视频路径]     - 运行视频稳定化 (Deep3D 模式)"
-    echo "  stabilize-monst3r [视频] - 运行视频稳定化 (MonST3R 模式)"
-    echo "  stop                     - 停止运行中的容器"
-    echo "  clean                    - 删除镜像和容器"
-    echo "  help                     - 显示帮助信息"
+    echo "  build                                    - 构建 Docker 镜像并下载 Checkpoints"
+    echo "  run                                      - 运行 Docker 容器 (交互模式, 用于调试)"
+    echo "  stabilize [视频] [开始] [结束]          - 运行视频稳定化 (Deep3D 模式)"
+    echo "  stabilize-monst3r [视频] [开始] [结束]  - 运行视频稳定化 (MonST3R 模式)"
+    echo "  stop                                     - 停止运行中的容器"
+    echo "  clean                                    - 删除镜像和容器"
+    echo "  help                                     - 显示帮助信息"
+    echo ""
+    echo "视频裁剪参数 (可选):"
+    echo "  开始时间: HH:MM:SS 格式, 不指定则从 00:00:00 开始"
+    echo "  结束时间: HH:MM:SS 格式, 不指定则到视频结尾"
     echo ""
     echo "示例:"
-    echo "  $0 build                              # 构建镜像"
-    echo "  $0 stabilize                          # 使用默认 demo 视频 (jiangbo-1min.mp4)"
-    echo "  $0 stabilize /path/to/my_video.mp4   # 使用自定义视频"
-    echo "  $0 stabilize-monst3r /path/to/video  # MonST3R 模式处理自定义视频"
-    echo "  $0 run                                # 进入容器交互模式"
+    echo "  $0 build                                          # 构建镜像"
+    echo "  $0 stabilize                                      # 使用默认 demo 视频"
+    echo "  $0 stabilize /path/to/video.mp4                   # 使用自定义视频"
+    echo "  $0 stabilize /path/to/video.mp4 '' 00:00:15       # 裁剪前15秒"
+    echo "  $0 stabilize /path/to/video.mp4 00:00:10 ''       # 从10秒开始到结尾"
+    echo "  $0 stabilize /path/to/video.mp4 00:00:05 00:00:20 # 裁剪5-20秒"
+    echo "  $0 stabilize-monst3r /path/to/video.mp4 '' 00:00:15  # MonST3R 模式裁剪前15秒"
+    echo "  $0 run                                            # 进入容器交互模式"
     echo ""
     echo "挂载目录 (可在服务器上直接访问):"
     echo "  输入: $HOST_INPUT_DIR"
@@ -485,6 +569,7 @@ show_help() {
     echo "注意事项:"
     echo "  - RTX 3070 (8GB) 建议处理 <30秒 的视频，避免 GPU 内存不足"
     echo "  - 更长视频需要更大显存的 GPU (如 A10, A100)"
+    echo "  - 使用裁剪参数可以处理长视频的特定片段"
     echo ""
 }
 
@@ -498,17 +583,19 @@ main() {
             run_container
             ;;
         stabilize)
-            run_stabilize "$2"
+            # $2=视频路径, $3=开始时间, $4=结束时间
+            run_stabilize "$2" "$3" "$4"
             ;;
         stabilize-monst3r)
-            run_stabilize_monst3r "$2"
+            # $2=视频路径, $3=开始时间, $4=结束时间
+            run_stabilize_monst3r "$2" "$3" "$4"
             ;;
         # 保留旧命令兼容性
         demo)
-            run_stabilize
+            run_stabilize "" "" ""
             ;;
         demo-monst3r)
-            run_stabilize_monst3r
+            run_stabilize_monst3r "" "" ""
             ;;
         stop)
             stop_container

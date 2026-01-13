@@ -104,3 +104,29 @@ chmod +x bash_to_setup_docker_image_for_rstab.sh
 
 # 7. 交互模式进入容器
 ./bash_to_setup_docker_image_for_rstab.sh run	
+
+
+
+//>>chat 
+a. what is wrong @l4.ltxt  and fix it  /root/rstab_output folder on the host so that i can see the video is good or not
+b. if the video is stablized successfully, please save it into 
+c.fix these mess code problem @README.md#L154-281 
+d. based on aboves, update @README.md @bash_to_setup_docker_image_for_rstab.sh accordinglt
+
+
+
+
+//>>err 
+CUDA OOM: Your 1-minute video (1800 frames) is too large for RTX 3070 (8GB)
+poses.npy not found: Deep3D failed due to OOM, so RStab can't find the required file
+
+//>>ffmpeg cmd
+				//>>ffmpeg convert mp4 to avi>>mp4 to avi>>convert mp4 to avi
+				ffmpeg -ss 00:00:00 -to 00:00:15 -i /Users/mac/Documents/GitHub/android_use_cpp/my-info/utils/ffmpeg-convert-mp4-to-avi/mp4/6.mp4 -vf "crop=min(in_w\,in_h):min(in_w\,in_h),scale=360:360,fps=10" -c:v mjpeg -q:v 7 -pix_fmt yuv420p -an /Users/mac/Documents/GitHub/android_use_cpp/my-info/utils/ffmpeg-convert-mp4-to-avi/converted-avi/6.avi
+
+
+
+//>>chat 
+a. since this err @c.txt#L120-121 , please add a new parameter  when using either@README.md#L59-63 @README.md#L159-163 @README.md#L169-173 @README.md#L193-194 , so that i can clip(裁剪) the video into a specific duration, it is better, we can specify the begin and end like this(-ss 00:00:00 -to 00:00:15) in @c.txt#L125 , in this case i can easily clip the video according to my need. 
+b. if take this(-ss 00:00:00 -to 00:00:15) for example, we can either specify case a(-to 00:00:15) or case b(-ss 00:00:00) or case c(-ss 00:00:00 -to 00:00:15), for case a, it mean we don't specify the begin time, in this case, it mean 00:00:00, other has the same meaning, say for case B, it mean it don't specify the end etc
+c. update @README.md to show the changes in item a and 
