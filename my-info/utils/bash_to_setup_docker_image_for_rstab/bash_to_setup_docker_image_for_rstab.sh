@@ -84,6 +84,64 @@ log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
+# 检测是否在中国网络环境
+is_china_network() {
+    # 检测方法: 尝试访问 Docker Hub, 如果超时则认为在中国
+    if timeout 5 curl -s --head https://registry-1.docker.io/v2/ > /dev/null 2>&1; then
+        return 1  # 可以访问, 不是中国网络
+    else
+        return 0  # 无法访问, 可能是中国网络
+    fi
+}
+
+# 配置 Docker 镜像 (中国网络)
+setup_docker_mirror() {
+    local DOCKER_CONFIG_DIR="/etc/docker"
+    local DOCKER_CONFIG_FILE="$DOCKER_CONFIG_DIR/daemon.json"
+    
+    # 检查是否已经配置了镜像
+    if [ -f "$DOCKER_CONFIG_FILE" ] && grep -q "registry-mirrors" "$DOCKER_CONFIG_FILE"; then
+        log_info "Docker 镜像已配置"
+        return 0
+    fi
+    
+    log_info "配置 Docker 镜像 (中国网络加速)..."
+    
+    # 创建配置目录
+    mkdir -p "$DOCKER_CONFIG_DIR"
+    
+    # 备份原配置
+    if [ -f "$DOCKER_CONFIG_FILE" ]; then
+        cp "$DOCKER_CONFIG_FILE" "$DOCKER_CONFIG_FILE.bak"
+    fi
+    
+    # 写入镜像配置 (使用多个镜像源以提高可用性)
+    cat > "$DOCKER_CONFIG_FILE" << 'EOF'
+{
+    "registry-mirrors": [
+        "https://docker.1ms.run",
+        "https://docker.xuanyuan.me",
+        "https://docker.m.daocloud.io",
+        "https://hub.rat.dev"
+    ]
+}
+EOF
+    
+    log_info "Docker 镜像配置完成, 重启 Docker 服务..."
+    systemctl daemon-reload
+    systemctl restart docker
+    
+    # 等待 Docker 启动
+    sleep 3
+    
+    if docker info > /dev/null 2>&1; then
+        log_info "Docker 服务重启成功"
+    else
+        log_error "Docker 服务重启失败"
+        return 1
+    fi
+}
+
 # 修复 dpkg 错误 (如果存在)
 fix_dpkg_errors() {
     # 检查是否有 dpkg 错误
@@ -302,10 +360,23 @@ build_image() {
     check_prerequisites
     create_directories
     
+    # 检测中国网络并配置镜像
+    if is_china_network; then
+        log_warn "检测到中国网络环境, 配置 Docker 镜像加速..."
+        setup_docker_mirror
+    else
+        log_info "网络环境正常, 无需配置镜像"
+    fi
+    
     cd "$SCRIPT_DIR/related-files"
     
     log_info "构建镜像: $IMAGE_NAME:$IMAGE_TAG"
-    docker build -t "$IMAGE_NAME:$IMAGE_TAG" .
+    if is_china_network; then
+        log_info "使用中国镜像加速构建..."
+        docker build --build-arg USE_CHINA_MIRROR=true -t "$IMAGE_NAME:$IMAGE_TAG" .
+    else
+        docker build -t "$IMAGE_NAME:$IMAGE_TAG" .
+    fi
     
     log_info "Docker 镜像构建完成!"
     docker images | grep "$IMAGE_NAME"

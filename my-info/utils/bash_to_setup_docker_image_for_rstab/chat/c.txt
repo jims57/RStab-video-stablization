@@ -151,3 +151,65 @@ c. update @README.md to show the changes in item a and
 a. update @bash_to_setup_docker_image_for_rstab.sh to let me to set the maxborder like my ios xcframework built by @build_ios_xcframework_for_video_stabilization.sh @source-files , since our clients can accept 1280, 1080 or 720 resolustion, you can let @README.md#L186-193 @README.md#L175-178 @README.md#L165-168 @README.md#L149-156 @README.md#L60-63 can set the target solution, in this case it can avoid OOM problem as much as possible, and speed up the inference process(which is vital to us)
 b.update @README.md accordinlgy
 c.for better solution you can see my ios app @ViewController.h@ViewController.m  which use the xcframework 
+
+
+//>>nvidia
+root@iZuf6efbfmm2tngksg6t8lZ:~# nvidia-smi
+Tue Jan 13 12:38:37 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 570.195.03             Driver Version: 570.195.03     CUDA Version: 12.8     |
+|-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA A10                     On  |   00000000:00:07.0 Off |                    0 |
+|  0%   28C    P8              9W /  150W |       0MiB /  23028MiB |      0%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+                                                                                         
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|  No running processes found                                                             |
++-----------------------------------------------------------------------------------------+
+root@iZuf6efbfmm2tngksg6t8lZ:~# nvcc --version
+nvcc: NVIDIA (R) Cuda compiler driver
+Copyright (c) 2005-2025 NVIDIA Corporation
+Built on Fri_Feb_21_20:23:50_PST_2025
+Cuda compilation tools, release 12.8, V12.8.93
+Build cuda_12.8.r12.8/compiler.35583870_0
+
+
+//>>private key>>aliyun server private key path
+/Users/mac/.ssh/aliyun/WQ/Jimmy-TTS-Private-Key-SH.pem
+
+//aliyun server ip:
+
+
+
+
+
+Based on the search results, there are several mirror options for GitHub access:
+
+For users in China, there is a domestic mirror site available at https://github.akams.cn/ which provides acceleration for GitHub access. 2
+
+There's also a general GitHub mirror service that supports Clone, Release, RAW and ZIP acceleration to help speed up access to GitHub resources. 8
+
+It's worth noting that GitHub itself doesn't officially maintain mirrors (as they are the primary service), but third-party organizations provide these mirror services, particularly to address network issues in certain regions like China.
+
+Some enterprises also maintain their own mirror sites, such as those listed in Chinese domestic open-source mirror site collections including NetEase, Sohu, and Alibaba Cloud mirrors. 7
+
+If you're specifically looking for repository mirrors rather than the GitHub platform itself, there are projects like the Chromium source mirror on GitHub 1 and the AOSP (Android Open Source Project) mirror on GitHub. 10
+
+
+
+10
+
+
+
+docker builder prune -f
+./bash_to_setup_docker_image_for_rstab.sh build
+

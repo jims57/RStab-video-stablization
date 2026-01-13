@@ -1,0 +1,16 @@
+[+] Building 30.1s (2/2) FINISHED                                                                                                                         docker:default
+ => [internal] load build definition from Dockerfile                                                                                                                0.0s
+ => => transferring dockerfile: 2.87kB                                                                                                                              0.0s
+ => ERROR [internal] load metadata for docker.io/nvidia/cuda:11.8.0-cudnn8-devel-ubuntu22.04                                                                       30.0s
+------
+ > [internal] load metadata for docker.io/nvidia/cuda:11.8.0-cudnn8-devel-ubuntu22.04:
+------
+Dockerfile:5
+--------------------
+   3 |     # 兼容 CUDA 11.x 和 12.x 环境
+   4 |     
+   5 | >>> FROM nvidia/cuda:11.8.0-cudnn8-devel-ubuntu22.04
+   6 |     
+   7 |     # 设置环境变量
+--------------------
+ERROR: failed to build: failed to solve: nvidia/cuda:11.8.0-cudnn8-devel-ubuntu22.04: failed to resolve source metadata for docker.io/nvidia/cuda:11.8.0-cudnn8-devel-ubuntu22.04: failed to do request: Head "https://registry-1.docker.io/v2/nvidia/cuda/manifests/11.8.0-cudnn8-devel-ubuntu22.04": dial tcp 174.37.243.85:443: i/o timeout

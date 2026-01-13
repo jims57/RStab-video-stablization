@@ -1,0 +1,27 @@
+GitHub mirrors are third-party hosted replicas of GitHub's repository content, mainly used to bypass access restrictions or improve download speed in specific regions. Here are the most commonly used and stable GitHub mirror services:
+1. FastGit
+Mirror URL: https://hub.fastgit.xyz
+Usage: Replace github.com in the original Git clone address with hub.fastgit.xyz.
+Example:
+bash
+运行
+# Original
+git clone https://github.com/username/repo.git
+# Mirror
+git clone https://hub.fastgit.xyz/username/repo.git
+Note: FastGit is a popular open-source mirror, but its availability may vary by region; it also supports release file downloads.
+2. GitHub Mirror (by GitLab)
+Mirror URL: https://gitlab.com/mirrors/github
+Usage: It is a community-maintained mirror library. You can search for the target repository under the mirrors/github namespace on GitLab.
+Note: The synchronization delay is usually within a few hours, suitable for accessing open-source projects that do not require real-time updates.
+3. CNPMJS Mirror (for npm packages, including GitHub repo proxy)
+Proxy URL: https://github.com.cnpmjs.org
+Usage: Same as FastGit, replace the domain name directly:
+bash
+运行
+git clone https://github.com.cnpmjs.org/username/repo.git
+Note: It is mainly used for npm package dependency acceleration, and also supports Git repository cloning.
+Key Warnings
+Security Risks: Third-party mirrors are not officially maintained by GitHub. There may be potential risks of code tampering. Avoid using mirrors for private or sensitive repositories; for open-source projects, it is recommended to verify the code hash after downloading.
+Synchronization Delay: Mirror repositories may have a certain delay compared to the original GitHub repository, and the latest commits may not be synchronized in real time.
+Service Stability: Mirror services are often run by volunteers, and their availability is not guaranteed long-term. If one mirror fails, you can switch to another.

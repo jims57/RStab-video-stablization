@@ -1,8 +1,12 @@
 # RStab Video Stabilization Docker Image
 # 支持 Deep3D 和 MonST3R 两种预处理模式
 # 兼容 CUDA 11.x 和 12.x 环境
+# 支持中国网络 (使用 GitHub 镜像)
 
 FROM nvidia/cuda:11.8.0-cudnn8-devel-ubuntu22.04
+
+# 构建参数: 是否使用中国镜像 (默认 false)
+ARG USE_CHINA_MIRROR=false
 
 # 设置环境变量
 ENV DEBIAN_FRONTEND=noninteractive
@@ -42,14 +46,34 @@ RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.10 1 &
     update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 1 && \
     update-alternatives --install /usr/bin/pip pip /usr/bin/pip3 1
 
-# 升级 pip
-RUN pip install --upgrade pip setuptools wheel
+# 升级 pip (使用清华镜像加速, 如果在中国)
+RUN if [ "$USE_CHINA_MIRROR" = "true" ]; then \
+        pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple && \
+        pip install --upgrade pip setuptools wheel; \
+    else \
+        pip install --upgrade pip setuptools wheel; \
+    fi
 
 # 安装 gdown 用于下载 Google Drive 文件
 RUN pip install gdown
 
-# 克隆 RStab 仓库
-RUN git clone https://github.com/pzzz-cv/RStab.git --recursive /mnt/rstab/RStab
+# 克隆 RStab 仓库 (使用 GitHub 镜像, 如果在中国)
+# 尝试多个镜像源: FastGit, CNPMJS, gitclone.com
+RUN if [ "$USE_CHINA_MIRROR" = "true" ]; then \
+        echo "使用 GitHub 镜像克隆 RStab..." && \
+        ( git clone https://hub.fastgit.xyz/pzzz-cv/RStab.git /mnt/rstab/RStab && echo "FastGit 成功" ) || \
+        ( rm -rf /mnt/rstab/RStab; git clone https://github.com.cnpmjs.org/pzzz-cv/RStab.git /mnt/rstab/RStab && echo "CNPMJS 成功" ) || \
+        ( rm -rf /mnt/rstab/RStab; git clone https://gitclone.com/github.com/pzzz-cv/RStab.git /mnt/rstab/RStab && echo "gitclone.com 成功" ) || \
+        ( rm -rf /mnt/rstab/RStab; git clone https://github.akams.cn/pzzz-cv/RStab.git /mnt/rstab/RStab && echo "akams 成功" ) || \
+        ( rm -rf /mnt/rstab/RStab; echo "所有镜像失败, 尝试直接克隆..."; git clone https://github.com/pzzz-cv/RStab.git /mnt/rstab/RStab ) && \
+        cd /mnt/rstab/RStab && \
+        git config --global url."https://hub.fastgit.xyz/".insteadOf "https://github.com/" && \
+        git submodule update --init --recursive || \
+        ( git config --global url."https://github.com.cnpmjs.org/".insteadOf "https://github.com/" && git submodule update --init --recursive ) || \
+        echo "submodule 更新失败, 继续..."; \
+    else \
+        git clone https://github.com/pzzz-cv/RStab.git --recursive /mnt/rstab/RStab; \
+    fi
 
 # 安装 PyTorch (兼容 CUDA 11.8, 向后兼容 11.x 和部分 12.x)
 RUN pip install torch==2.0.1+cu118 torchvision==0.15.2+cu118 torchaudio==2.0.2+cu118 --extra-index-url https://download.pytorch.org/whl/cu118
