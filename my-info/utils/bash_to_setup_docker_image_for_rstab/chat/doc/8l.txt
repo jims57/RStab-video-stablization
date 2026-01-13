@@ -1,0 +1,21 @@
+[INFO] 下载 RStab Checkpoint...
+./bash_to_setup_docker_image_for_rstab.sh: line 250: gdown: command not found
+[WARN] gdown 下载失败，尝试 wget...
+--2026-01-13 14:47:31--  https://drive.google.com/uc?export=download&id=1q3QM1damtvHLukhIOIAdv9IKm646Oj11&confirm=t
+Resolving drive.google.com (drive.google.com)... 199.59.148.209, 2a03:2880:f12c:83:face:b00c:0:25de
+Connecting to drive.google.com (drive.google.com)|199.59.148.209|:443... failed: Connection timed out.
+Connecting to drive.google.com (drive.google.com)|2a03:2880:f12c:83:face:b00c:0:25de|:443... failed: Network is unreachable.
+Archive:  checkpoint.zip
+  End-of-central-directory signature not found.  Either this file is not
+  a zipfile, or it constitutes one disk of a multi-part archive.  In the
+  latter case the central directory and zipfile comment will be found on
+  the last disk(s) of this archive.
+unzip:  cannot find zipfile directory in one of checkpoint.zip or
+        checkpoint.zip.zip, and cannot find checkpoint.zip.ZIP, period.
+[INFO] RStab Checkpoint 下载完成
+[INFO] 下载 MonST3R Checkpoint...
+./bash_to_setup_docker_image_for_rstab.sh: line 287: gdown: command not found
+[WARN] gdown 下载失败，尝试 wget...
+--2026-01-13 14:49:45--  https://drive.google.com/uc?export=download&id=1e-2lGrnxcQXIqjOn-UoIsZnV98CvjKXa&confirm=t
+Resolving drive.google.com (drive.google.com)... 74.86.12.173, 2a03:2880:f111:83:face:b00c:0:25de
+Connecting to drive.google.com (drive.google.com)|74.86.12.173|:443... 

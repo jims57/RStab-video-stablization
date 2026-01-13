@@ -48,10 +48,18 @@ chmod +x related-files/run_rstab.sh
 1. 检查系统环境 (Docker, NVIDIA GPU)
 2. 安装必要工具 (unzip, gdown)
 3. 修复可能的 dpkg 错误
-4. 构建 Docker 镜像 (约 33GB)
-5. 自动下载 RStab 和 MonST3R Checkpoints
+4. **自动检测中国网络并配置镜像** (Docker Hub + GitHub + Google Drive)
+5. 构建 Docker 镜像 (约 33GB)
+6. 自动下载 RStab 和 MonST3R Checkpoints
 
 构建时间约 15-30 分钟，取决于网络速度。
+
+**如果构建失败需要重试:**
+```bash
+# 清除 Docker 构建缓存后重新构建
+docker builder prune -f
+./bash_to_setup_docker_image_for_rstab.sh build
+```
 
 ### Step 5: 运行 Demo 测试
 
@@ -69,6 +77,17 @@ chmod +x related-files/run_rstab.sh
 ls -la /root/rstab_output/
 ```
 
+## 中国网络支持
+
+脚本会自动检测中国网络环境并配置以下镜像:
+
+| 服务 | 镜像源 |
+|------|--------|
+| Docker Hub | docker.1ms.run, docker.xuanyuan.me, docker.m.daocloud.io |
+| GitHub | hub.fastgit.xyz, github.com.cnpmjs.org, gitclone.com |
+| Google Drive | drive.moegirl.org.cn, drive.proxy.ustclug.org |
+| PyPI | pypi.tuna.tsinghua.edu.cn |
+
 ## 手动下载 Checkpoints (如果自动下载失败)
 
 如果 Google Drive 下载受限，可以手动下载:
@@ -78,13 +97,19 @@ ls -la /root/rstab_output/
 | 项目 | 内容 |
 |------|------|
 | 下载链接 | https://drive.google.com/file/d/1q3QM1damtvHLukhIOIAdv9IKm646Oj11/view |
+| 中国镜像 | https://drive.moegirl.org.cn/uc?id=1q3QM1damtvHLukhIOIAdv9IKm646Oj11 |
 | 目标目录 | `/root/rstab_checkpoints/RStab/` |
 | 文件格式 | zip 压缩包，需解压 |
 
 ```bash
-pip install gdown
+# 方法1: 使用中国镜像 (推荐)
 mkdir -p /root/rstab_checkpoints/RStab
 cd /root/rstab_checkpoints/RStab
+wget "https://drive.moegirl.org.cn/uc?id=1q3QM1damtvHLukhIOIAdv9IKm646Oj11" -O checkpoint.zip
+unzip checkpoint.zip
+
+# 方法2: 使用 gdown (海外服务器)
+pip install gdown -i https://pypi.tuna.tsinghua.edu.cn/simple
 gdown --fuzzy "https://drive.google.com/file/d/1q3QM1damtvHLukhIOIAdv9IKm646Oj11/view"
 unzip checkpoint.zip
 ```
@@ -94,11 +119,16 @@ unzip checkpoint.zip
 | 项目 | 内容 |
 |------|------|
 | 下载链接 | https://drive.google.com/file/d/1e-2lGrnxcQXIqjOn-UoIsZnV98CvjKXa/view |
+| 中国镜像 | https://drive.moegirl.org.cn/uc?id=1e-2lGrnxcQXIqjOn-UoIsZnV98CvjKXa |
 | 目标路径 | `/root/rstab_checkpoints/MonST3R/MonST3R_PO-TA-S-W_ViTLarge_BaseDecoder_512_dpt.pth` |
 
 ```bash
+# 方法1: 使用中国镜像 (推荐)
 mkdir -p /root/rstab_checkpoints/MonST3R
 cd /root/rstab_checkpoints/MonST3R
+wget "https://drive.moegirl.org.cn/uc?id=1e-2lGrnxcQXIqjOn-UoIsZnV98CvjKXa" -O MonST3R_PO-TA-S-W_ViTLarge_BaseDecoder_512_dpt.pth
+
+# 方法2: 使用 gdown (海外服务器)
 gdown --fuzzy "https://drive.google.com/file/d/1e-2lGrnxcQXIqjOn-UoIsZnV98CvjKXa/view"
 ```
 

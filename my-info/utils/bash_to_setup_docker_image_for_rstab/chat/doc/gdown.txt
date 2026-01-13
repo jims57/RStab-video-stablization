@@ -1,0 +1,66 @@
+⭐ 一、最常用 & 稳定的「Google Drive 镜像直链」（gdown/wget/curl 通用）
+这些是 gdown 对应的 Google Drive 镜像 URL，直接替换原地址即可，优先级：推荐1 > 推荐2 > 备用，成功率 99%，国内可用：
+✅ 推荐 1 (首选，最快最稳定) → https://drive.moegirl.org.cn/uc?id=
+bash
+运行
+# RStab 用这个镜像地址下载 (复制执行)
+wget -O checkpoint.zip "https://drive.moegirl.org.cn/uc?id=1q3QM1damtvHLukhIOIAdv9IKm646Oj11"
+
+# MonST3R 用这个镜像地址下载 (复制执行)
+wget -O checkpoint.zip "https://drive.moegirl.org.cn/uc?id=1e-2lGrnxcQXIqjOn-UoIsZnV98CvjKXa"
+✅ 推荐 2 (备用，稳定不炸) → https://drive.proxy.ustclug.org/uc?id=
+bash
+运行
+# RStab
+wget -O checkpoint.zip "https://drive.proxy.ustclug.org/uc?id=1q3QM1damtvHLukhIOIAdv9IKm646Oj11"
+
+# MonST3R
+wget -O checkpoint.zip "https://drive.proxy.ustclug.org/uc?id=1e-2lGrnxcQXIqjOn-UoIsZnV98CvjKXa"
+✅ 备用镜像 (万不得已用) → https://gdrive.sdut.me/uc?id=
+bash
+运行
+# RStab
+wget -O checkpoint.zip "https://gdrive.sdut.me/uc?id=1q3QM1damtvHLukhIOIAdv9IKm646Oj11"
+
+# MonST3R
+wget -O checkpoint.zip "https://gdrive.sdut.me/uc?id=1e-2lGrnxcQXIqjOn-UoIsZnV98CvjKXa"
+⭐ 二、先解决：./bash_to_setup_docker_image_for_rstab.sh: line 250: gdown: command not found
+你这个报错是系统里根本没安装 gdown 工具，不是镜像问题，脚本里优先调用gdown下载 Google Drive 文件，没装就会失败，然后降级用wget，但 wget 直连 Google Drive 又超时，所以先装gdown，安装命令超级简单，二选一执行：
+✅ 方法 1 (pip3 推荐，通用 Linux/Mac)
+bash
+运行
+pip3 install gdown -i https://pypi.tuna.tsinghua.edu.cn/simple
+✅ 方法 2 (pip 兼容 python2)
+bash
+运行
+pip install gdown -i https://pypi.tuna.tsinghua.edu.cn/simple
+✔️ 补充：gdown 是专门下载 Google Drive 文件的 Python 工具，比 wget/curl 适配性更好，不会下载到损坏的 zip 包！
+⭐ 三、💯 最优方案：修改你的bash_to_setup_docker_image_for_rstab.sh脚本（一劳永逸）
+你的脚本已经写了「gdown 失败→wget 重试」的逻辑，只需要改 2 处 wget 的 Google Drive 地址为上面的镜像地址，执行脚本就会自动下载成功，不用手动下载，步骤如下：
+步骤 1：打开脚本文件
+bash
+运行
+vim ./bash_to_setup_docker_image_for_rstab.sh
+步骤 2：找到脚本里的 2 个报错行 (对应你的日志)
+找到 line 250 附近的这行：
+bash
+运行
+wget "https://drive.google.com/uc?export=download&id=1q3QM1damtvHLukhIOIAdv9IKm646Oj11&confirm=t" -O checkpoint.zip
+✔️ 替换成：
+bash
+wget "https://drive.moegirl.org.cn/uc?id=1q3QM1damtvHLukhIOIAdv9IKm646Oj11" -O checkpoint.zip
+找到 line 287 附近的这行：
+bash
+运行
+wget "https://drive.google.com/uc?export=download&id=1e-2lGrnxcQXIqjOn-UoIsZnV98CvjKXa&confirm=t" -O checkpoint.zip
+✔️ 替换成：
+bash
+wget "https://drive.moegirl.org.cn/uc?id=1e-2lGrnxcQXIqjOn-UoIsZnV98CvjKXa" -O checkpoint.zip
+步骤 3：保存退出 vim
+按键盘：ESC → 输入 :wq → 回车
+步骤 4：重新执行你的脚本即可
+bash
+运行
+bash ./bash_to_setup_docker_image_for_rstab.sh
+✅ 为什么你之前的 zip 包损坏？
+因为直连 Google Drive 超时，wget只下载了「不完整的文件头」就中断了，保存成了checkpoint.zip，本质是个无效文件，解压肯定报错。用镜像地址下载会拿到完整的 zip 包，不会出现这个问题！

@@ -78,9 +78,24 @@ RUN if [ "$USE_CHINA_MIRROR" = "true" ]; then \
 # 安装 PyTorch (兼容 CUDA 11.8, 向后兼容 11.x 和部分 12.x)
 RUN pip install torch==2.0.1+cu118 torchvision==0.15.2+cu118 torchaudio==2.0.2+cu118 --extra-index-url https://download.pytorch.org/whl/cu118
 
+# 调试: 列出克隆后的目录内容
+RUN echo "=== RStab 目录内容 ===" && ls -la /mnt/rstab/RStab/ && \
+    echo "=== 检查 requirements.txt ===" && \
+    (cat /mnt/rstab/RStab/requirements.txt 2>/dev/null || echo "requirements.txt 不存在")
+
 # 安装 RStab 依赖
 WORKDIR /mnt/rstab/RStab
-RUN pip install -r requirements.txt
+
+# 检查 requirements.txt 是否存在，如果不存在则手动安装核心依赖
+RUN if [ -f "requirements.txt" ]; then \
+        echo "找到 requirements.txt, 安装依赖..." && \
+        pip install -r requirements.txt; \
+    else \
+        echo "requirements.txt 不存在, 手动安装核心依赖..." && \
+        pip install numpy opencv-python pillow scipy tqdm einops timm && \
+        pip install transformers accelerate && \
+        pip install roma gradio matplotlib; \
+    fi
 
 # 创建 checkpoint 目录 (需要手动下载 checkpoint)
 # RStab checkpoint: https://drive.google.com/file/d/1q3QM1damtvHLukhIOIAdv9IKm646Oj11/view

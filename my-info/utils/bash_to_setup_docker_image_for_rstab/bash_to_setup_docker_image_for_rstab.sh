@@ -246,25 +246,64 @@ download_rstab_checkpoint() {
     mkdir -p "$RSTAB_DIR"
     cd "$RSTAB_DIR"
     
-    # 使用 gdown 下载
-    if gdown --fuzzy "https://drive.google.com/file/d/1q3QM1damtvHLukhIOIAdv9IKm646Oj11/view" -O checkpoint.zip; then
+    local RSTAB_FILE_ID="1q3QM1damtvHLukhIOIAdv9IKm646Oj11"
+    local DOWNLOAD_SUCCESS=false
+    
+    # 检测是否在中国网络, 优先使用镜像
+    if is_china_network; then
+        log_info "检测到中国网络, 使用 Google Drive 镜像下载..."
+        
+        # 尝试多个 Google Drive 镜像
+        local GDRIVE_MIRRORS="https://drive.moegirl.org.cn/uc?id= https://drive.proxy.ustclug.org/uc?id= https://gdrive.sdut.me/uc?id="
+        for MIRROR in $GDRIVE_MIRRORS; do
+            log_info "尝试镜像: $MIRROR"
+            if wget --no-check-certificate "${MIRROR}${RSTAB_FILE_ID}" -O checkpoint.zip 2>/dev/null; then
+                # 检查文件是否有效 (大于 1MB)
+                if [ -f checkpoint.zip ] && [ $(stat -c%s checkpoint.zip 2>/dev/null || stat -f%z checkpoint.zip 2>/dev/null) -gt 1000000 ]; then
+                    log_info "镜像下载成功: $MIRROR"
+                    DOWNLOAD_SUCCESS=true
+                    break
+                else
+                    log_warn "下载文件无效, 尝试下一个镜像..."
+                    rm -f checkpoint.zip
+                fi
+            fi
+        done
+    fi
+    
+    # 如果镜像下载失败, 尝试 gdown
+    if [ "$DOWNLOAD_SUCCESS" = "false" ]; then
+        log_info "尝试 gdown 下载..."
+        if command -v gdown &> /dev/null && gdown --fuzzy "https://drive.google.com/file/d/${RSTAB_FILE_ID}/view" -O checkpoint.zip 2>/dev/null; then
+            if [ -f checkpoint.zip ] && [ $(stat -c%s checkpoint.zip 2>/dev/null || stat -f%z checkpoint.zip 2>/dev/null) -gt 1000000 ]; then
+                log_info "gdown 下载成功"
+                DOWNLOAD_SUCCESS=true
+            fi
+        fi
+    fi
+    
+    # 如果 gdown 失败, 尝试直连 wget
+    if [ "$DOWNLOAD_SUCCESS" = "false" ]; then
+        log_warn "gdown 下载失败，尝试直连 wget..."
+        wget --no-check-certificate "https://drive.google.com/uc?export=download&id=${RSTAB_FILE_ID}&confirm=t" -O checkpoint.zip
+        if [ -f checkpoint.zip ] && [ $(stat -c%s checkpoint.zip 2>/dev/null || stat -f%z checkpoint.zip 2>/dev/null) -gt 1000000 ]; then
+            DOWNLOAD_SUCCESS=true
+        fi
+    fi
+    
+    # 解压
+    if [ "$DOWNLOAD_SUCCESS" = "true" ] && [ -f checkpoint.zip ]; then
         log_info "下载成功，解压中..."
         unzip -o checkpoint.zip
         rm -f checkpoint.zip
         log_info "RStab Checkpoint 下载完成"
     else
-        log_warn "gdown 下载失败，尝试 wget..."
-        wget --no-check-certificate "https://drive.google.com/uc?export=download&id=1q3QM1damtvHLukhIOIAdv9IKm646Oj11&confirm=t" -O checkpoint.zip
-        if [ -f checkpoint.zip ]; then
-            unzip -o checkpoint.zip
-            rm -f checkpoint.zip
-            log_info "RStab Checkpoint 下载完成"
-        else
-            log_error "RStab Checkpoint 下载失败!"
-            log_error "请手动下载: https://drive.google.com/file/d/1q3QM1damtvHLukhIOIAdv9IKm646Oj11/view"
-            log_error "解压到: $RSTAB_DIR/"
-            return 1
-        fi
+        rm -f checkpoint.zip 2>/dev/null
+        log_error "RStab Checkpoint 下载失败!"
+        log_error "请手动下载: https://drive.google.com/file/d/${RSTAB_FILE_ID}/view"
+        log_error "或使用镜像: https://drive.moegirl.org.cn/uc?id=${RSTAB_FILE_ID}"
+        log_error "解压到: $RSTAB_DIR/"
+        return 1
     fi
 }
 
@@ -283,20 +322,60 @@ download_monst3r_checkpoint() {
     mkdir -p "$MONST3R_DIR"
     cd "$MONST3R_DIR"
     
-    # 使用 gdown 下载
-    if gdown --fuzzy "https://drive.google.com/file/d/1e-2lGrnxcQXIqjOn-UoIsZnV98CvjKXa/view" -O "$MONST3R_FILE"; then
+    local MONST3R_FILE_ID="1e-2lGrnxcQXIqjOn-UoIsZnV98CvjKXa"
+    local DOWNLOAD_SUCCESS=false
+    
+    # 检测是否在中国网络, 优先使用镜像
+    if is_china_network; then
+        log_info "检测到中国网络, 使用 Google Drive 镜像下载..."
+        
+        # 尝试多个 Google Drive 镜像
+        local GDRIVE_MIRRORS="https://drive.moegirl.org.cn/uc?id= https://drive.proxy.ustclug.org/uc?id= https://gdrive.sdut.me/uc?id="
+        for MIRROR in $GDRIVE_MIRRORS; do
+            log_info "尝试镜像: $MIRROR"
+            if wget --no-check-certificate "${MIRROR}${MONST3R_FILE_ID}" -O "$MONST3R_FILE" 2>/dev/null; then
+                # 检查文件是否有效 (大于 1MB)
+                if [ -f "$MONST3R_FILE" ] && [ $(stat -c%s "$MONST3R_FILE" 2>/dev/null || stat -f%z "$MONST3R_FILE" 2>/dev/null) -gt 1000000 ]; then
+                    log_info "镜像下载成功: $MIRROR"
+                    DOWNLOAD_SUCCESS=true
+                    break
+                else
+                    log_warn "下载文件无效, 尝试下一个镜像..."
+                    rm -f "$MONST3R_FILE"
+                fi
+            fi
+        done
+    fi
+    
+    # 如果镜像下载失败, 尝试 gdown
+    if [ "$DOWNLOAD_SUCCESS" = "false" ]; then
+        log_info "尝试 gdown 下载..."
+        if command -v gdown &> /dev/null && gdown --fuzzy "https://drive.google.com/file/d/${MONST3R_FILE_ID}/view" -O "$MONST3R_FILE" 2>/dev/null; then
+            if [ -f "$MONST3R_FILE" ] && [ $(stat -c%s "$MONST3R_FILE" 2>/dev/null || stat -f%z "$MONST3R_FILE" 2>/dev/null) -gt 1000000 ]; then
+                log_info "gdown 下载成功"
+                DOWNLOAD_SUCCESS=true
+            fi
+        fi
+    fi
+    
+    # 如果 gdown 失败, 尝试直连 wget
+    if [ "$DOWNLOAD_SUCCESS" = "false" ]; then
+        log_warn "gdown 下载失败，尝试直连 wget..."
+        wget --no-check-certificate "https://drive.google.com/uc?export=download&id=${MONST3R_FILE_ID}&confirm=t" -O "$MONST3R_FILE"
+        if [ -f "$MONST3R_FILE" ] && [ $(stat -c%s "$MONST3R_FILE" 2>/dev/null || stat -f%z "$MONST3R_FILE" 2>/dev/null) -gt 1000000 ]; then
+            DOWNLOAD_SUCCESS=true
+        fi
+    fi
+    
+    if [ "$DOWNLOAD_SUCCESS" = "true" ]; then
         log_info "MonST3R Checkpoint 下载完成"
     else
-        log_warn "gdown 下载失败，尝试 wget..."
-        wget --no-check-certificate "https://drive.google.com/uc?export=download&id=1e-2lGrnxcQXIqjOn-UoIsZnV98CvjKXa&confirm=t" -O "$MONST3R_FILE"
-        if [ -f "$MONST3R_FILE" ]; then
-            log_info "MonST3R Checkpoint 下载完成"
-        else
-            log_error "MonST3R Checkpoint 下载失败!"
-            log_error "请手动下载: https://drive.google.com/file/d/1e-2lGrnxcQXIqjOn-UoIsZnV98CvjKXa/view"
-            log_error "放到: $MONST3R_DIR/$MONST3R_FILE"
-            return 1
-        fi
+        rm -f "$MONST3R_FILE" 2>/dev/null
+        log_error "MonST3R Checkpoint 下载失败!"
+        log_error "请手动下载: https://drive.google.com/file/d/${MONST3R_FILE_ID}/view"
+        log_error "或使用镜像: https://drive.moegirl.org.cn/uc?id=${MONST3R_FILE_ID}"
+        log_error "放到: $MONST3R_DIR/$MONST3R_FILE"
+        return 1
     fi
 }
 

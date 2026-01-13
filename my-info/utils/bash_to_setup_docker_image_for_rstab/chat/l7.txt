@@ -1,0 +1,23 @@
+ => CACHED [ 6/21] RUN pip install gdown                                                                                                                            0.0s
+ => ERROR [ 7/21] RUN if [ "true" = "true" ]; then         echo "使用 GitHub 镜像克隆 RStab..." &&         git clone https://mirror.ghproxy.com/https://gith              0.4s
+------                                                                                                                                                                   
+ > [ 7/21] RUN if [ "true" = "true" ]; then         echo "使用 GitHub 镜像克隆 RStab..." &&         git clone https://mirror.ghproxy.com/https://github.com/pzzz-cv/RStab.git /mnt/rstab/RStab &&         cd /mnt/rstab/RStab &&         git config --global url."https://mirror.ghproxy.com/https://github.com/".insteadOf "https://github.com/" &&         git submodule update --init --recursive;     else         git clone https://github.com/pzzz-cv/RStab.git --recursive /mnt/rstab/RStab;     fi:
+0.120 使用 GitHub 镜像克隆 RStab...
+0.124 Cloning into '/mnt/rstab/RStab'...
+0.351 fatal: unable to access 'https://mirror.ghproxy.com/https://github.com/pzzz-cv/RStab.git/': gnutls_handshake() failed: Error in the pull function.
+------
+Dockerfile:61
+--------------------
+  60 |     # 克隆 RStab 仓库 (使用 GitHub 镜像, 如果在中国)
+  61 | >>> RUN if [ "$USE_CHINA_MIRROR" = "true" ]; then \
+  62 | >>>         echo "使用 GitHub 镜像克隆 RStab..." && \
+  63 | >>>         git clone https://mirror.ghproxy.com/https://github.com/pzzz-cv/RStab.git /mnt/rstab/RStab && \
+  64 | >>>         cd /mnt/rstab/RStab && \
+  65 | >>>         git config --global url."https://mirror.ghproxy.com/https://github.com/".insteadOf "https://github.com/" && \
+  66 | >>>         git submodule update --init --recursive; \
+  67 | >>>     else \
+  68 | >>>         git clone https://github.com/pzzz-cv/RStab.git --recursive /mnt/rstab/RStab; \
+  69 | >>>     fi
+  70 |     
+--------------------
+ERROR: failed to build: failed to solve: process "/bin/sh -c if [ \"$USE_CHINA_MIRROR\" = \"true\" ]; then         echo \"使用 GitHub 镜像克隆 RStab...\" &&         git clone https://mirror.ghproxy.com/https://github.com/pzzz-cv/RStab.git /mnt/rstab/RStab &&         cd /mnt/rstab/RStab &&         git config --global url.\"https://mirror.ghproxy.com/https://github.com/\".insteadOf \"https://github.com/\" &&         git submodule update 
