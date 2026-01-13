@@ -123,6 +123,16 @@ install_system_tools() {
         }
     fi
     
+    # 安装 ffmpeg (如果没有) - 用于视频裁剪
+    if ! command -v ffmpeg &> /dev/null; then
+        log_info "安装 ffmpeg..."
+        apt-get update -qq 2>/dev/null || true
+        apt-get install -y ffmpeg 2>/dev/null || {
+            fix_dpkg_errors
+            apt-get install -y ffmpeg
+        }
+    fi
+    
     # 安装 gdown (如果没有)
     if ! command -v gdown &> /dev/null; then
         log_info "安装 gdown..."
@@ -306,7 +316,9 @@ build_image() {
     download_checkpoints
     log_info "========== 构建和下载全部完成 =========="
     echo ""
-    log_info "现在可以运行: ./bash_to_setup_docker_image_for_rstab.sh demo"
+    log_info "现在可以运行:"
+    log_info "  ./bash_to_setup_docker_image_for_rstab.sh stabilize                                      # 使用默认 demo 视频"
+    log_info "  ./bash_to_setup_docker_image_for_rstab.sh stabilize /root/rstab_input/jiangbo-1min.mp4 '' 00:00:05  # 裁剪前5秒"
 }
 
 # 运行容器 (交互模式)
@@ -452,13 +464,14 @@ run_stabilize() {
     log_info "启动 Docker 容器进行稳定化处理..."
     docker run --gpus all \
         --name "$CONTAINER_NAME" \
+        --entrypoint /bin/bash \
         -v "$HOST_INPUT_DIR:/mnt/rstab/input" \
         -v "$HOST_OUTPUT_DIR:/mnt/rstab/output" \
         -v "$HOST_CHECKPOINTS_DIR/RStab:/mnt/rstab/RStab/RStab_core/pretrained" \
         -v "$HOST_CHECKPOINTS_DIR/MonST3R:/mnt/rstab/RStab/MonST3R/checkpoints" \
         -w /mnt/rstab \
         "$IMAGE_NAME:$IMAGE_TAG" \
-        bash -c "/mnt/rstab/run_rstab.sh $VIDEO_NAME deep3d"
+        -c "/mnt/rstab/run_rstab.sh $VIDEO_NAME deep3d"
     
     local EXIT_CODE=$?
     if [ $EXIT_CODE -eq 0 ]; then
@@ -532,13 +545,14 @@ run_stabilize_monst3r() {
     log_info "启动 Docker 容器进行稳定化处理..."
     docker run --gpus all \
         --name "$CONTAINER_NAME" \
+        --entrypoint /bin/bash \
         -v "$HOST_INPUT_DIR:/mnt/rstab/input" \
         -v "$HOST_OUTPUT_DIR:/mnt/rstab/output" \
         -v "$HOST_CHECKPOINTS_DIR/RStab:/mnt/rstab/RStab/RStab_core/pretrained" \
         -v "$HOST_CHECKPOINTS_DIR/MonST3R:/mnt/rstab/RStab/MonST3R/checkpoints" \
         -w /mnt/rstab \
         "$IMAGE_NAME:$IMAGE_TAG" \
-        bash -c "/mnt/rstab/run_rstab.sh $VIDEO_NAME monst3r"
+        -c "/mnt/rstab/run_rstab.sh $VIDEO_NAME monst3r"
     
     local EXIT_CODE=$?
     if [ $EXIT_CODE -eq 0 ]; then

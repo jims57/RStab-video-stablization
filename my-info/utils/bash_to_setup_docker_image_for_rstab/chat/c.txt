@@ -142,3 +142,7 @@ c. update @README.md to show the changes in item a and
 
 # MonST3R mode with clipping
 ./bash_to_setup_docker_image_for_rstab.sh stabilize-monst3r /root/rstab_input/jiangbo-1min.mp4 '' 00:00:20
+
+
+
+./bash_to_setup_docker_image_for_rstab.sh stabilize /root/rstab_input/jiangbo-1min.mp4 '' 00:00:15

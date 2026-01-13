@@ -87,3 +87,38 @@ NVIDIA GeForce RTX 3070, 8192 MiB, 580.95.05
 [INFO] 使用自定义视频: jiangbo-1min.mp4
 [INFO] 裁剪视频: /root/rstab_input/jiangbo-1min.mp4
 [INFO]   结束时间: 00:00:15
+
+
+
+[INFO] ========== 开始下载 Checkpoints ==========
+[INFO] 检查并下载 Checkpoints...
+[INFO] RStab Checkpoint 已存在，跳过下载
+[INFO] MonST3R Checkpoint 已存在，跳过下载
+[INFO] Checkpoints 准备完成
+[INFO] ========== 构建和下载全部完成 ==========
+
+[INFO] 现在可以运行: ./bash_to_setup_docker_image_for_rstab.sh demo
+
+
+./bash_to_setup_docker_image_for_rstab.sh stabilize /root/rstab_input/jiangbo-1min.mp4 '' 00:00:15
+
+
+
+//>>log 
+[INFO] 现在可以运行: ./bash_to_setup_docker_image_for_rstab.sh demo
+root@ubuntu:~/bash_to_setup_docker_image_for_rstab# ./bash_to_setup_docker_image_for_rstab.sh stabilize /root/rstab_input/jiangbo-1min.mp4 '' 00:00:15
+[INFO] 检查系统环境...
+[INFO] NVIDIA GPU 信息:
+NVIDIA GeForce RTX 3070, 8192 MiB, 580.95.05
+[INFO] 检查并安装必要的系统工具...
+[INFO] 系统环境检查通过
+[INFO] 创建挂载目录...
+[INFO] 输入目录: /root/rstab_input
+[INFO] 输出目录: /root/rstab_output
+[INFO] Checkpoint 目录: /root/rstab_checkpoints
+[INFO] 视频已在输入目录中: /root/rstab_input/jiangbo-1min.mp4
+[INFO] 使用自定义视频: jiangbo-1min.mp4
+[INFO] 裁剪视频: /root/rstab_input/jiangbo-1min.mp4
+[INFO]   结束时间: 00:00:15
+[INFO] 执行 ffmpeg 裁剪命令...
+./bash_to_setup_docker_image_for_rstab.sh: line 392: ffmpeg: command not found
