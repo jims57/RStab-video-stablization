@@ -317,8 +317,8 @@ build_image() {
     log_info "========== 构建和下载全部完成 =========="
     echo ""
     log_info "现在可以运行:"
-    log_info "  ./bash_to_setup_docker_image_for_rstab.sh stabilize                                      # 使用默认 demo 视频"
-    log_info "  ./bash_to_setup_docker_image_for_rstab.sh stabilize /root/rstab_input/jiangbo-1min.mp4 '' 00:00:05  # 裁剪前5秒"
+    log_info "  ./bash_to_setup_docker_image_for_rstab.sh stabilize /root/rstab_input/jiangbo-1min.mp4 '' 00:00:15 720  # 裁剪前15秒 + 缩放到720p (推荐 8GB GPU)"
+    log_info "  ./bash_to_setup_docker_image_for_rstab.sh stabilize /root/rstab_input/jiangbo-1min.mp4 '' '' 720        # 不裁剪, 只缩放到720p"
 }
 
 # 运行容器 (交互模式)
@@ -373,25 +373,28 @@ copy_custom_video() {
     fi
 }
 
-# 裁剪视频 (使用 ffmpeg)
-# 参数: $1=输入视频, $2=输出视频, $3=开始时间, $4=结束时间
-clip_video() {
+# 预处理视频 (裁剪 + 缩放)
+# 参数: $1=输入视频, $2=输出视频, $3=开始时间, $4=结束时间, $5=maxborder
+preprocess_video() {
     local INPUT_VIDEO="$1"
     local OUTPUT_VIDEO="$2"
     local START_TIME="$3"
     local END_TIME="$4"
+    local MAXBORDER="$5"
     
-    local FFMPEG_ARGS=""
+    local FFMPEG_INPUT_ARGS=""
+    local FFMPEG_FILTER_ARGS=""
+    local FFMPEG_OUTPUT_ARGS=""
     
-    # 构建 ffmpeg 参数
+    # 构建裁剪参数
     if [ -n "$START_TIME" ]; then
-        FFMPEG_ARGS="$FFMPEG_ARGS -ss $START_TIME"
+        FFMPEG_INPUT_ARGS="$FFMPEG_INPUT_ARGS -ss $START_TIME"
     fi
     if [ -n "$END_TIME" ]; then
-        FFMPEG_ARGS="$FFMPEG_ARGS -to $END_TIME"
+        FFMPEG_INPUT_ARGS="$FFMPEG_INPUT_ARGS -to $END_TIME"
     fi
     
-    log_info "裁剪视频: $INPUT_VIDEO"
+    log_info "预处理视频: $INPUT_VIDEO"
     if [ -n "$START_TIME" ]; then
         log_info "  开始时间: $START_TIME"
     fi
@@ -399,27 +402,47 @@ clip_video() {
         log_info "  结束时间: $END_TIME"
     fi
     
-    # 使用 ffmpeg 裁剪视频 (保持原始编码)
-    log_info "执行 ffmpeg 裁剪命令..."
-    ffmpeg -y $FFMPEG_ARGS -i "$INPUT_VIDEO" -c copy "$OUTPUT_VIDEO"
+    # 如果指定了 maxborder, 添加缩放滤镜
+    if [ -n "$MAXBORDER" ] && [ "$MAXBORDER" -gt 0 ] 2>/dev/null; then
+        log_info "  最大边长: ${MAXBORDER}px (缩放以避免 OOM)"
+        # 使用 scale 滤镜保持宽高比, 较大边缩放到 maxborder
+        FFMPEG_FILTER_ARGS="-vf \"scale='if(gt(iw,ih),${MAXBORDER},-2)':'if(gt(iw,ih),-2,${MAXBORDER})'\""
+        # 缩放后需要重新编码
+        FFMPEG_OUTPUT_ARGS="-c:v libx264 -preset fast -crf 18 -c:a aac"
+    else
+        # 不缩放, 保持原始编码
+        FFMPEG_OUTPUT_ARGS="-c copy"
+    fi
+    
+    # 执行 ffmpeg
+    log_info "执行 ffmpeg 预处理命令..."
+    if [ -n "$FFMPEG_FILTER_ARGS" ]; then
+        eval ffmpeg -y $FFMPEG_INPUT_ARGS -i "$INPUT_VIDEO" $FFMPEG_FILTER_ARGS $FFMPEG_OUTPUT_ARGS "$OUTPUT_VIDEO"
+    else
+        ffmpeg -y $FFMPEG_INPUT_ARGS -i "$INPUT_VIDEO" $FFMPEG_OUTPUT_ARGS "$OUTPUT_VIDEO"
+    fi
     
     if [ $? -eq 0 ] && [ -f "$OUTPUT_VIDEO" ]; then
         local FILE_SIZE=$(ls -lh "$OUTPUT_VIDEO" | awk '{print $5}')
-        log_info "视频裁剪完成: $OUTPUT_VIDEO (大小: $FILE_SIZE)"
+        # 获取视频分辨率
+        local RESOLUTION=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "$OUTPUT_VIDEO" 2>/dev/null)
+        log_info "视频预处理完成: $OUTPUT_VIDEO"
+        log_info "  大小: $FILE_SIZE, 分辨率: $RESOLUTION"
     else
-        log_error "视频裁剪失败"
+        log_error "视频预处理失败"
         exit 1
     fi
 }
 
 # 运行视频稳定化 (Deep3D 模式)
-# 参数: $1=视频文件路径, $2=开始时间(HH:MM:SS), $3=结束时间(HH:MM:SS)
+# 参数: $1=视频文件路径, $2=开始时间(HH:MM:SS), $3=结束时间(HH:MM:SS), $4=maxborder(最大边长)
 run_stabilize() {
     local VIDEO_PATH="$1"
     local START_TIME="$2"
     local END_TIME="$3"
+    local MAXBORDER="$4"
     local VIDEO_NAME
-    local CLIPPED_VIDEO_NAME
+    local PROCESSED_VIDEO_NAME
     
     check_prerequisites
     create_directories
@@ -437,21 +460,24 @@ run_stabilize() {
         log_info "使用自定义视频: $VIDEO_NAME"
     fi
     
-    # 如果指定了裁剪参数, 先裁剪视频
-    if [ -n "$START_TIME" ] || [ -n "$END_TIME" ]; then
+    # 如果指定了裁剪或缩放参数, 预处理视频
+    if [ -n "$START_TIME" ] || [ -n "$END_TIME" ] || [ -n "$MAXBORDER" ]; then
         local BASE_NAME="${VIDEO_NAME%.*}"
         local EXT="${VIDEO_NAME##*.}"
-        local TIME_SUFFIX=""
+        local SUFFIX=""
         if [ -n "$START_TIME" ]; then
-            TIME_SUFFIX="${TIME_SUFFIX}_from${START_TIME//:/}"
+            SUFFIX="${SUFFIX}_from${START_TIME//:/}"
         fi
         if [ -n "$END_TIME" ]; then
-            TIME_SUFFIX="${TIME_SUFFIX}_to${END_TIME//:/}"
+            SUFFIX="${SUFFIX}_to${END_TIME//:/}"
         fi
-        CLIPPED_VIDEO_NAME="${BASE_NAME}${TIME_SUFFIX}.${EXT}"
+        if [ -n "$MAXBORDER" ] && [ "$MAXBORDER" -gt 0 ] 2>/dev/null; then
+            SUFFIX="${SUFFIX}_mb${MAXBORDER}"
+        fi
+        PROCESSED_VIDEO_NAME="${BASE_NAME}${SUFFIX}.${EXT}"
         
-        clip_video "$HOST_INPUT_DIR/$VIDEO_NAME" "$HOST_INPUT_DIR/$CLIPPED_VIDEO_NAME" "$START_TIME" "$END_TIME"
-        VIDEO_NAME="$CLIPPED_VIDEO_NAME"
+        preprocess_video "$HOST_INPUT_DIR/$VIDEO_NAME" "$HOST_INPUT_DIR/$PROCESSED_VIDEO_NAME" "$START_TIME" "$END_TIME" "$MAXBORDER"
+        VIDEO_NAME="$PROCESSED_VIDEO_NAME"
     fi
     
     # 停止已存在的容器
@@ -494,13 +520,14 @@ run_stabilize() {
 }
 
 # 运行视频稳定化 (MonST3R 模式)
-# 参数: $1=视频文件路径, $2=开始时间(HH:MM:SS), $3=结束时间(HH:MM:SS)
+# 参数: $1=视频文件路径, $2=开始时间(HH:MM:SS), $3=结束时间(HH:MM:SS), $4=maxborder(最大边长)
 run_stabilize_monst3r() {
     local VIDEO_PATH="$1"
     local START_TIME="$2"
     local END_TIME="$3"
+    local MAXBORDER="$4"
     local VIDEO_NAME
-    local CLIPPED_VIDEO_NAME
+    local PROCESSED_VIDEO_NAME
     
     check_prerequisites
     create_directories
@@ -518,21 +545,24 @@ run_stabilize_monst3r() {
         log_info "使用自定义视频: $VIDEO_NAME"
     fi
     
-    # 如果指定了裁剪参数, 先裁剪视频
-    if [ -n "$START_TIME" ] || [ -n "$END_TIME" ]; then
+    # 如果指定了裁剪或缩放参数, 预处理视频
+    if [ -n "$START_TIME" ] || [ -n "$END_TIME" ] || [ -n "$MAXBORDER" ]; then
         local BASE_NAME="${VIDEO_NAME%.*}"
         local EXT="${VIDEO_NAME##*.}"
-        local TIME_SUFFIX=""
+        local SUFFIX=""
         if [ -n "$START_TIME" ]; then
-            TIME_SUFFIX="${TIME_SUFFIX}_from${START_TIME//:/}"
+            SUFFIX="${SUFFIX}_from${START_TIME//:/}"
         fi
         if [ -n "$END_TIME" ]; then
-            TIME_SUFFIX="${TIME_SUFFIX}_to${END_TIME//:/}"
+            SUFFIX="${SUFFIX}_to${END_TIME//:/}"
         fi
-        CLIPPED_VIDEO_NAME="${BASE_NAME}${TIME_SUFFIX}.${EXT}"
+        if [ -n "$MAXBORDER" ] && [ "$MAXBORDER" -gt 0 ] 2>/dev/null; then
+            SUFFIX="${SUFFIX}_mb${MAXBORDER}"
+        fi
+        PROCESSED_VIDEO_NAME="${BASE_NAME}${SUFFIX}.${EXT}"
         
-        clip_video "$HOST_INPUT_DIR/$VIDEO_NAME" "$HOST_INPUT_DIR/$CLIPPED_VIDEO_NAME" "$START_TIME" "$END_TIME"
-        VIDEO_NAME="$CLIPPED_VIDEO_NAME"
+        preprocess_video "$HOST_INPUT_DIR/$VIDEO_NAME" "$HOST_INPUT_DIR/$PROCESSED_VIDEO_NAME" "$START_TIME" "$END_TIME" "$MAXBORDER"
+        VIDEO_NAME="$PROCESSED_VIDEO_NAME"
     fi
     
     # 停止已存在的容器
@@ -595,40 +625,44 @@ show_help() {
     echo ""
     echo "RStab Docker 自动化构建和运行脚本"
     echo ""
-    echo "用法: $0 [命令] [视频路径] [开始时间] [结束时间]"
+    echo "用法: $0 [命令] [视频路径] [开始时间] [结束时间] [maxborder]"
     echo ""
     echo "命令:"
-    echo "  build                                    - 构建 Docker 镜像并下载 Checkpoints"
-    echo "  run                                      - 运行 Docker 容器 (交互模式, 用于调试)"
-    echo "  stabilize [视频] [开始] [结束]          - 运行视频稳定化 (Deep3D 模式)"
-    echo "  stabilize-monst3r [视频] [开始] [结束]  - 运行视频稳定化 (MonST3R 模式)"
-    echo "  stop                                     - 停止运行中的容器"
-    echo "  clean                                    - 删除镜像和容器"
-    echo "  help                                     - 显示帮助信息"
+    echo "  build                                              - 构建 Docker 镜像并下载 Checkpoints"
+    echo "  run                                                - 运行 Docker 容器 (交互模式, 用于调试)"
+    echo "  stabilize [视频] [开始] [结束] [maxborder]        - 运行视频稳定化 (Deep3D 模式)"
+    echo "  stabilize-monst3r [视频] [开始] [结束] [maxborder] - 运行视频稳定化 (MonST3R 模式)"
+    echo "  stop                                               - 停止运行中的容器"
+    echo "  clean                                              - 删除镜像和容器"
+    echo "  help                                               - 显示帮助信息"
     echo ""
-    echo "视频裁剪参数 (可选):"
-    echo "  开始时间: HH:MM:SS 格式, 不指定则从 00:00:00 开始"
-    echo "  结束时间: HH:MM:SS 格式, 不指定则到视频结尾"
+    echo "参数说明:"
+    echo "  开始时间:  HH:MM:SS 格式, 不指定则从 00:00:00 开始"
+    echo "  结束时间:  HH:MM:SS 格式, 不指定则到视频结尾"
+    echo "  maxborder: 最大边长 (像素), 缩放视频以避免 OOM 并加速推理"
+    echo "             推荐值: 720 (8GB GPU), 1080 (16GB GPU), 1280 (24GB+ GPU)"
     echo ""
     echo "示例:"
-    echo "  $0 build                                          # 构建镜像"
-    echo "  $0 stabilize                                      # 使用默认 demo 视频"
-    echo "  $0 stabilize /path/to/video.mp4                   # 使用自定义视频"
-    echo "  $0 stabilize /path/to/video.mp4 '' 00:00:15       # 裁剪前15秒"
-    echo "  $0 stabilize /path/to/video.mp4 00:00:10 ''       # 从10秒开始到结尾"
-    echo "  $0 stabilize /path/to/video.mp4 00:00:05 00:00:20 # 裁剪5-20秒"
-    echo "  $0 stabilize-monst3r /path/to/video.mp4 '' 00:00:15  # MonST3R 模式裁剪前15秒"
-    echo "  $0 run                                            # 进入容器交互模式"
+    echo "  $0 build                                                    # 构建镜像"
+    echo "  $0 stabilize                                                # 使用默认 demo 视频"
+    echo "  $0 stabilize /path/to/video.mp4                             # 使用自定义视频"
+    echo "  $0 stabilize /path/to/video.mp4 '' 00:00:15                 # 裁剪前15秒"
+    echo "  $0 stabilize /path/to/video.mp4 '' 00:00:15 720             # 裁剪前15秒 + 缩放到720p"
+    echo "  $0 stabilize /path/to/video.mp4 '' '' 720                   # 不裁剪, 只缩放到720p"
+    echo "  $0 stabilize /path/to/video.mp4 00:00:05 00:00:20 1080      # 裁剪5-20秒 + 缩放到1080p"
+    echo "  $0 stabilize-monst3r /path/to/video.mp4 '' 00:00:15 720     # MonST3R 模式"
+    echo "  $0 run                                                      # 进入容器交互模式"
     echo ""
     echo "挂载目录 (可在服务器上直接访问):"
     echo "  输入: $HOST_INPUT_DIR"
     echo "  输出: $HOST_OUTPUT_DIR"
     echo "  Checkpoint: $HOST_CHECKPOINTS_DIR"
     echo ""
-    echo "注意事项:"
-    echo "  - RTX 3070 (8GB) 建议处理 <30秒 的视频，避免 GPU 内存不足"
-    echo "  - 更长视频需要更大显存的 GPU (如 A10, A100)"
-    echo "  - 使用裁剪参数可以处理长视频的特定片段"
+    echo "GPU 内存与 maxborder 推荐:"
+    echo "  RTX 3070 (8GB):   maxborder=720,  视频时长 <30秒"
+    echo "  RTX 3080 (10GB):  maxborder=720,  视频时长 <45秒"
+    echo "  RTX 3090 (24GB):  maxborder=1080, 视频时长 <60秒"
+    echo "  A10/A100 (24GB+): maxborder=1280, 视频时长 <120秒"
     echo ""
 }
 
@@ -642,19 +676,19 @@ main() {
             run_container
             ;;
         stabilize)
-            # $2=视频路径, $3=开始时间, $4=结束时间
-            run_stabilize "$2" "$3" "$4"
+            # $2=视频路径, $3=开始时间, $4=结束时间, $5=maxborder
+            run_stabilize "$2" "$3" "$4" "$5"
             ;;
         stabilize-monst3r)
-            # $2=视频路径, $3=开始时间, $4=结束时间
-            run_stabilize_monst3r "$2" "$3" "$4"
+            # $2=视频路径, $3=开始时间, $4=结束时间, $5=maxborder
+            run_stabilize_monst3r "$2" "$3" "$4" "$5"
             ;;
         # 保留旧命令兼容性
         demo)
-            run_stabilize "" "" ""
+            run_stabilize "" "" "" ""
             ;;
         demo-monst3r)
-            run_stabilize_monst3r "" "" ""
+            run_stabilize_monst3r "" "" "" ""
             ;;
         stop)
             stop_container

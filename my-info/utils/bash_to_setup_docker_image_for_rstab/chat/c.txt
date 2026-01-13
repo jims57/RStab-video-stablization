@@ -146,3 +146,8 @@ c. update @README.md to show the changes in item a and
 
 
 ./bash_to_setup_docker_image_for_rstab.sh stabilize /root/rstab_input/jiangbo-1min.mp4 '' 00:00:15
+
+//>>chat 
+a. update @bash_to_setup_docker_image_for_rstab.sh to let me to set the maxborder like my ios xcframework built by @build_ios_xcframework_for_video_stabilization.sh @source-files , since our clients can accept 1280, 1080 or 720 resolustion, you can let @README.md#L186-193 @README.md#L175-178 @README.md#L165-168 @README.md#L149-156 @README.md#L60-63 can set the target solution, in this case it can avoid OOM problem as much as possible, and speed up the inference process(which is vital to us)
+b.update @README.md accordinlgy
+c.for better solution you can see my ios app @ViewController.h@ViewController.m  which use the xcframework 

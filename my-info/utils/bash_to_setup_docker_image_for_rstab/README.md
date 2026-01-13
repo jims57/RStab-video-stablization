@@ -127,70 +127,74 @@ gdown --fuzzy "https://drive.google.com/file/d/1e-2lGrnxcQXIqjOn-UoIsZnV98CvjKXa
 | 命令 | 说明 |
 |------|------|
 | `./bash_to_setup_docker_image_for_rstab.sh build` | 构建 Docker 镜像并下载 Checkpoints |
-| `./bash_to_setup_docker_image_for_rstab.sh stabilize [视频] [开始] [结束]` | 运行视频稳定化 (Deep3D 模式) |
-| `./bash_to_setup_docker_image_for_rstab.sh stabilize-monst3r [视频] [开始] [结束]` | 运行视频稳定化 (MonST3R 模式) |
+| `./bash_to_setup_docker_image_for_rstab.sh stabilize [视频] [开始] [结束] [maxborder]` | 运行视频稳定化 (Deep3D 模式) |
+| `./bash_to_setup_docker_image_for_rstab.sh stabilize-monst3r [视频] [开始] [结束] [maxborder]` | 运行视频稳定化 (MonST3R 模式) |
 | `./bash_to_setup_docker_image_for_rstab.sh run` | 进入容器交互模式 (用于调试) |
 | `./bash_to_setup_docker_image_for_rstab.sh stop` | 停止运行中的容器 |
 | `./bash_to_setup_docker_image_for_rstab.sh clean` | 删除镜像和容器 |
 | `./bash_to_setup_docker_image_for_rstab.sh help` | 显示帮助信息 |
 
-## 视频裁剪参数
-
-由于 GPU 内存限制, 长视频可能导致 CUDA OOM 错误。可以使用裁剪参数处理视频的特定片段:
+## 参数说明
 
 | 参数 | 格式 | 说明 |
 |------|------|------|
 | 开始时间 | HH:MM:SS | 不指定则从 00:00:00 开始 |
 | 结束时间 | HH:MM:SS | 不指定则到视频结尾 |
+| maxborder | 数字 (像素) | 最大边长, 缩放视频以避免 OOM 并加速推理 |
 
-**裁剪示例:**
+## maxborder 参数 (重要)
 
-```bash
-# Case A: 只指定结束时间 - 裁剪前15秒 (从00:00:00到00:00:15)
-./bash_to_setup_docker_image_for_rstab.sh stabilize /path/to/video.mp4 '' 00:00:15
+`maxborder` 参数用于缩放视频分辨率, 可以:
+- **避免 CUDA OOM 错误** - 降低分辨率减少 GPU 内存占用
+- **加速推理过程** - 分辨率越低处理越快
 
-# Case B: 只指定开始时间 - 从10秒开始到视频结尾
-./bash_to_setup_docker_image_for_rstab.sh stabilize /path/to/video.mp4 00:00:10 ''
+**推荐值:**
 
-# Case C: 同时指定开始和结束时间 - 裁剪5秒到20秒的片段
-./bash_to_setup_docker_image_for_rstab.sh stabilize /path/to/video.mp4 00:00:05 00:00:20
-```
+| GPU | 显存 | maxborder | 建议视频时长 |
+|-----|------|-----------|--------------|
+| RTX 3070 | 8GB | 720 | < 30秒 |
+| RTX 3080 | 10GB | 720 | < 45秒 |
+| RTX 3090 | 24GB | 1080 | < 60秒 |
+| A10/A100 | 24GB+ | 1280 | < 120秒 |
 
 ## 详细使用示例
 
-### Case 1: 使用默认 Demo 视频
+### Case 1: 使用 maxborder 缩放 (推荐 8GB GPU)
 
 ```bash
-# Deep3D 模式 (推荐)
-./bash_to_setup_docker_image_for_rstab.sh stabilize
+# 裁剪前15秒 + 缩放到720p (推荐 RTX 3070 等 8GB GPU)
+./bash_to_setup_docker_image_for_rstab.sh stabilize /root/rstab_input/jiangbo-1min.mp4 '' 00:00:15 720
 
-# MonST3R 模式
-./bash_to_setup_docker_image_for_rstab.sh stabilize-monst3r
+# 不裁剪, 只缩放到720p
+./bash_to_setup_docker_image_for_rstab.sh stabilize /root/rstab_input/jiangbo-1min.mp4 '' '' 720
+
+# 裁剪5-20秒 + 缩放到1080p (推荐 24GB GPU)
+./bash_to_setup_docker_image_for_rstab.sh stabilize /root/rstab_input/jiangbo-1min.mp4 00:00:05 00:00:20 1080
 ```
 
 ### Case 2: 使用自定义视频
 
 ```bash
-# Deep3D 模式 - 指定视频绝对路径
-./bash_to_setup_docker_image_for_rstab.sh stabilize /root/my_videos/shaky_video.mp4
+# Deep3D 模式 - 指定视频绝对路径 + 缩放
+./bash_to_setup_docker_image_for_rstab.sh stabilize /root/my_videos/shaky_video.mp4 '' '' 720
 
-# MonST3R 模式 - 指定视频绝对路径
-./bash_to_setup_docker_image_for_rstab.sh stabilize-monst3r /root/my_videos/shaky_video.mp4
+# MonST3R 模式 - 指定视频绝对路径 + 缩放
+./bash_to_setup_docker_image_for_rstab.sh stabilize-monst3r /root/my_videos/shaky_video.mp4 '' '' 720
 
 # 视频会自动复制到 /root/rstab_input/ 目录
 ```
 
-### Case 3: 使用视频裁剪 (避免 GPU 内存不足)
+### Case 3: 使用视频裁剪 (不缩放)
 
 ```bash
-# 裁剪前15秒并稳定化 (推荐用于 8GB GPU)
+# 裁剪前15秒 (不缩放, 需要大显存 GPU)
 ./bash_to_setup_docker_image_for_rstab.sh stabilize /root/rstab_input/jiangbo-1min.mp4 '' 00:00:15
 
 # 裁剪10秒到25秒的片段
 ./bash_to_setup_docker_image_for_rstab.sh stabilize /root/rstab_input/jiangbo-1min.mp4 00:00:10 00:00:25
 
-# MonST3R 模式裁剪前20秒
-./bash_to_setup_docker_image_for_rstab.sh stabilize-monst3r /root/rstab_input/jiangbo-1min.mp4 '' 00:00:20
+# MonST3R 模式裁剪前20秒 + 缩放到720p
+./bash_to_setup_docker_image_for_rstab.sh stabilize-monst3r /root/rstab_input/jiangbo-1min.mp4 '' 00:00:20 720
 ```
 
 ### Case 4: 进入容器交互模式 (用于调试)
