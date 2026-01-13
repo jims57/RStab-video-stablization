@@ -71,3 +71,19 @@ FileNotFoundError: [Errno 2] No such file or directory: '../output/Deep3D/jiangb
 [INFO] Demo 处理完成!
 [INFO] 输出目录: /root/rstab_output
 total 12
+
+
+root@ubuntu:~/bash_to_setup_docker_image_for_rstab# ./bash_to_setup_docker_image_for_rstab.sh stabilize /root/rstab_input/jiangbo-1min.mp4 '' 00:00:15
+[INFO] 检查系统环境...
+[INFO] NVIDIA GPU 信息:
+NVIDIA GeForce RTX 3070, 8192 MiB, 580.95.05
+[INFO] 检查并安装必要的系统工具...
+[INFO] 系统环境检查通过
+[INFO] 创建挂载目录...
+[INFO] 输入目录: /root/rstab_input
+[INFO] 输出目录: /root/rstab_output
+[INFO] Checkpoint 目录: /root/rstab_checkpoints
+[INFO] 视频已在输入目录中: /root/rstab_input/jiangbo-1min.mp4
+[INFO] 使用自定义视频: jiangbo-1min.mp4
+[INFO] 裁剪视频: /root/rstab_input/jiangbo-1min.mp4
+[INFO]   结束时间: 00:00:15

@@ -341,9 +341,20 @@ copy_custom_video() {
     fi
     
     if [ -f "$VIDEO_PATH" ]; then
-        log_info "复制自定义视频到输入目录..."
-        cp "$VIDEO_PATH" "$HOST_INPUT_DIR/"
-        log_info "视频已复制: $HOST_INPUT_DIR/$(basename $VIDEO_PATH)"
+        local VIDEO_NAME=$(basename "$VIDEO_PATH")
+        local DEST_PATH="$HOST_INPUT_DIR/$VIDEO_NAME"
+        
+        # 检查源文件和目标文件是否相同
+        local SRC_REAL=$(realpath "$VIDEO_PATH" 2>/dev/null || echo "$VIDEO_PATH")
+        local DEST_REAL=$(realpath "$DEST_PATH" 2>/dev/null || echo "$DEST_PATH")
+        
+        if [ "$SRC_REAL" = "$DEST_REAL" ]; then
+            log_info "视频已在输入目录中: $DEST_PATH"
+        else
+            log_info "复制自定义视频到输入目录..."
+            cp "$VIDEO_PATH" "$HOST_INPUT_DIR/"
+            log_info "视频已复制: $DEST_PATH"
+        fi
     else
         log_error "视频文件不存在: $VIDEO_PATH"
         exit 1
@@ -377,10 +388,12 @@ clip_video() {
     fi
     
     # 使用 ffmpeg 裁剪视频 (保持原始编码)
-    ffmpeg -y $FFMPEG_ARGS -i "$INPUT_VIDEO" -c copy "$OUTPUT_VIDEO" 2>/dev/null
+    log_info "执行 ffmpeg 裁剪命令..."
+    ffmpeg -y $FFMPEG_ARGS -i "$INPUT_VIDEO" -c copy "$OUTPUT_VIDEO"
     
-    if [ $? -eq 0 ]; then
-        log_info "视频裁剪完成: $OUTPUT_VIDEO"
+    if [ $? -eq 0 ] && [ -f "$OUTPUT_VIDEO" ]; then
+        local FILE_SIZE=$(ls -lh "$OUTPUT_VIDEO" | awk '{print $5}')
+        log_info "视频裁剪完成: $OUTPUT_VIDEO (大小: $FILE_SIZE)"
     else
         log_error "视频裁剪失败"
         exit 1
@@ -436,6 +449,7 @@ run_stabilize() {
     check_checkpoints
     
     log_info "处理视频: $VIDEO_NAME (Deep3D 模式)"
+    log_info "启动 Docker 容器进行稳定化处理..."
     docker run --gpus all \
         --name "$CONTAINER_NAME" \
         -v "$HOST_INPUT_DIR:/mnt/rstab/input" \
@@ -444,11 +458,26 @@ run_stabilize() {
         -v "$HOST_CHECKPOINTS_DIR/MonST3R:/mnt/rstab/RStab/MonST3R/checkpoints" \
         -w /mnt/rstab \
         "$IMAGE_NAME:$IMAGE_TAG" \
-        -c "/mnt/rstab/run_rstab.sh $VIDEO_NAME deep3d"
+        bash -c "/mnt/rstab/run_rstab.sh $VIDEO_NAME deep3d"
     
-    log_info "处理完成!"
+    local EXIT_CODE=$?
+    if [ $EXIT_CODE -eq 0 ]; then
+        log_info "稳定化处理完成!"
+    else
+        log_error "稳定化处理失败 (退出码: $EXIT_CODE)"
+    fi
+    
     log_info "输出目录: $HOST_OUTPUT_DIR"
+    log_info "输出内容:"
     ls -la "$HOST_OUTPUT_DIR"
+    
+    # 显示 RStab 输出目录
+    if [ -d "$HOST_OUTPUT_DIR/RStab" ]; then
+        log_info "RStab 稳定化结果:"
+        find "$HOST_OUTPUT_DIR/RStab" -name "*.mp4" -type f 2>/dev/null | while read f; do
+            log_info "  稳定化视频: $f"
+        done
+    fi
 }
 
 # 运行视频稳定化 (MonST3R 模式)
@@ -500,6 +529,7 @@ run_stabilize_monst3r() {
     check_checkpoints_monst3r
     
     log_info "处理视频: $VIDEO_NAME (MonST3R 模式)"
+    log_info "启动 Docker 容器进行稳定化处理..."
     docker run --gpus all \
         --name "$CONTAINER_NAME" \
         -v "$HOST_INPUT_DIR:/mnt/rstab/input" \
@@ -508,11 +538,26 @@ run_stabilize_monst3r() {
         -v "$HOST_CHECKPOINTS_DIR/MonST3R:/mnt/rstab/RStab/MonST3R/checkpoints" \
         -w /mnt/rstab \
         "$IMAGE_NAME:$IMAGE_TAG" \
-        -c "/mnt/rstab/run_rstab.sh $VIDEO_NAME monst3r"
+        bash -c "/mnt/rstab/run_rstab.sh $VIDEO_NAME monst3r"
     
-    log_info "处理完成!"
+    local EXIT_CODE=$?
+    if [ $EXIT_CODE -eq 0 ]; then
+        log_info "稳定化处理完成!"
+    else
+        log_error "稳定化处理失败 (退出码: $EXIT_CODE)"
+    fi
+    
     log_info "输出目录: $HOST_OUTPUT_DIR"
+    log_info "输出内容:"
     ls -la "$HOST_OUTPUT_DIR"
+    
+    # 显示 RStab 输出目录
+    if [ -d "$HOST_OUTPUT_DIR/RStab" ]; then
+        log_info "RStab 稳定化结果:"
+        find "$HOST_OUTPUT_DIR/RStab" -name "*.mp4" -type f 2>/dev/null | while read f; do
+            log_info "  稳定化视频: $f"
+        done
+    fi
 }
 
 # 停止容器
