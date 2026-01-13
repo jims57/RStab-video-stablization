@@ -1,0 +1,73 @@
+Images path:  /mnt/rstab/output/Deep3D/jiangbo-1min.mp4/images
+Transfor finished!
+=> preparing optical flow. it would take a while.
+/mnt/rstab/output/Deep3D/jiangbo-1min.mp4/images/*.png
+1800
+/mnt/rstab/RStab/Deep3D/video_pwc.py:83: DeprecationWarning: Starting with ImageIO v3 the behavior of this function will switch to that of iio.v3.imread. To keep the current behavior (and make this warning dissapear) use `import imageio.v2 as imageio` or call `imageio.v2.imread` directly.
+  frames = [imageio.imread(frame_names[j]) for j in range(batch_begin, batch_end)]
+/mnt/rstab/RStab/Deep3D/video_pwc.py:55: UserWarning: volatile was removed and now has no effect. Use `with torch.no_grad():` instead.
+  im_all_fwd = torch.autograd.Variable(torch.cat(im_all_fwd, 0).cuda(), volatile=True)
+/mnt/rstab/RStab/Deep3D/video_pwc.py:56: UserWarning: volatile was removed and now has no effect. Use `with torch.no_grad():` instead.
+  im_all_bwd = torch.autograd.Variable(torch.cat(im_all_bwd, 0).cuda(), volatile=True)
+/usr/local/lib/python3.10/dist-packages/cupy/cuda/compiler.py:464: UserWarning: cupy.cuda.compile_with_cache has been deprecated in CuPy v10, and will be removed in the future. Use cupy.RawModule or cupy.RawKernel instead.
+  warnings.warn(
+/usr/local/lib/python3.10/dist-packages/torch/nn/functional.py:5100: UserWarning: Default grid_sample and affine_grid behavior has changed to align_corners=False since 1.3.0. Please specify align_corners=True if the old behavior is desired. See the documentation of grid_sample for details.
+  warnings.warn(
+Traceback (most recent call last):
+  File "/mnt/rstab/RStab/Deep3D/video_pwc.py", line 84, in <module>
+    flow_fwd, flow_bwd = process_batch(frames, interval)
+  File "/mnt/rstab/RStab/Deep3D/video_pwc.py", line 73, in process_batch
+    return pass_model(im_all_fwd), pass_model(im_all_bwd)
+  File "/mnt/rstab/RStab/Deep3D/video_pwc.py", line 60, in pass_model
+    flo = net(im_all)
+  File "/usr/local/lib/python3.10/dist-packages/torch/nn/modules/module.py", line 1775, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/usr/local/lib/python3.10/dist-packages/torch/nn/modules/module.py", line 1786, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/mnt/rstab/RStab/Deep3D/models/pwcNet.py", line 298, in forward
+    objectEstimate = self.moduleTwo(tensorFirst[-5], tensorSecond[-5], objectEstimate)
+  File "/usr/local/lib/python3.10/dist-packages/torch/nn/modules/module.py", line 1775, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/usr/local/lib/python3.10/dist-packages/torch/nn/modules/module.py", line 1786, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/mnt/rstab/RStab/Deep3D/models/pwcNet.py", line 234, in forward
+    tensorFeat = torch.cat([ self.moduleTwo(tensorFeat), tensorFeat ], 1)
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 656.00 MiB. GPU 0 has a total capacity of 7.90 GiB of which 549.69 MiB is free. Process 116044 has 7.36 GiB memory in use. Of the allocated memory 6.74 GiB is allocated by PyTorch, and 444.59 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)
+Traceback (most recent call last):
+  File "/mnt/rstab/RStab/Deep3D/geometry_optimizer.py", line 192, in <module>
+    geo_optim = GeometryOptimizer(opt)
+  File "/mnt/rstab/RStab/Deep3D/geometry_optimizer.py", line 39, in __init__
+    self.seq_io = SequenceIO(opt, preprocess=True)
+  File "/mnt/rstab/RStab/Deep3D/sequence_io.py", line 28, in __init__
+    self.generate_flows()
+  File "/mnt/rstab/RStab/Deep3D/sequence_io.py", line 72, in generate_flows
+    assert ret == 0, "Failed to run PWC-Net, please check the environment of PWC-Net"
+AssertionError: Failed to run PWC-Net, please check the environment of PWC-Net
+[Step 2/2] 运行 RStab 稳定化...
+/usr/local/lib/python3.10/dist-packages/kornia/feature/lightglue.py:30: FutureWarning: `torch.cuda.amp.custom_fwd(args...)` is deprecated. Please use `torch.amp.custom_fwd(args..., device_type='cuda')` instead.
+  @torch.cuda.amp.custom_fwd(cast_inputs=torch.float32)
+Reloading from ./pretrained/model_255000.pth, starting at step=255000
+saving results to ../output/RStab/jiangbo-1min.mp4...
+saving results to ../output/RStab/jiangbo-1min.mp4/RStab_test_255000/videos
+loading ['RStab_test'] for rendering
+Traceback (most recent call last):
+  File "/mnt/rstab/RStab/RStab_core/rectify.py", line 174, in <module>
+    run(opt, args)
+  File "/usr/local/lib/python3.10/dist-packages/torch/utils/_contextlib.py", line 120, in decorate_context
+    return func(*args, **kwargs)
+  File "/mnt/rstab/RStab/RStab_core/rectify.py", line 122, in run
+    test_dataset = dataset_dict[args.eval_dataset](args, 'validation',
+  File "/mnt/rstab/RStab/RStab_core/ibrnet/data_loaders/nus.py", line 62, in __init__
+    intrinsics, poses, depths, bds, rgb_files = self.load_nus()
+  File "/mnt/rstab/RStab/RStab_core/ibrnet/data_loaders/nus.py", line 94, in load_nus
+    poses = np.load(os.path.join(base_dir,'poses.npy'))
+  File "/usr/local/lib/python3.10/dist-packages/numpy/lib/npyio.py", line 427, in load
+    fid = stack.enter_context(open(os_fspath(file), "rb"))
+FileNotFoundError: [Errno 2] No such file or directory: '../output/Deep3D/jiangbo-1min.mp4/poses.npy'
+========================================
+处理完成!
+输出目录: /mnt/rstab/output/
+========================================
+[INFO] Demo 处理完成!
+[INFO] 输出目录: /root/rstab_output
+total 12

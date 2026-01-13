@@ -333,12 +333,44 @@ run_container() {
         "$IMAGE_NAME:$IMAGE_TAG"
 }
 
-# 运行 demo (Deep3D 模式)
-run_demo() {
-    log_info "运行 Demo 视频稳定化 (Deep3D 模式)..."
+# 复制自定义视频到输入目录
+copy_custom_video() {
+    local VIDEO_PATH="$1"
+    if [ -z "$VIDEO_PATH" ]; then
+        return 0
+    fi
+    
+    if [ -f "$VIDEO_PATH" ]; then
+        log_info "复制自定义视频到输入目录..."
+        cp "$VIDEO_PATH" "$HOST_INPUT_DIR/"
+        log_info "视频已复制: $HOST_INPUT_DIR/$(basename $VIDEO_PATH)"
+    else
+        log_error "视频文件不存在: $VIDEO_PATH"
+        exit 1
+    fi
+}
+
+# 运行视频稳定化 (Deep3D 模式)
+# 参数: $1 = 视频文件路径 (可选, 默认使用 jiangbo-1min.mp4)
+run_stabilize() {
+    local VIDEO_PATH="$1"
+    local VIDEO_NAME
+    
     check_prerequisites
     create_directories
-    copy_demo_video
+    
+    # 确定视频文件
+    if [ -z "$VIDEO_PATH" ]; then
+        # 使用默认 demo 视频
+        copy_demo_video
+        VIDEO_NAME="jiangbo-1min.mp4"
+        log_info "使用默认 Demo 视频: $VIDEO_NAME"
+    else
+        # 使用自定义视频
+        copy_custom_video "$VIDEO_PATH"
+        VIDEO_NAME=$(basename "$VIDEO_PATH")
+        log_info "使用自定义视频: $VIDEO_NAME"
+    fi
     
     # 停止已存在的容器
     docker rm -f "$CONTAINER_NAME" 2>/dev/null || true
@@ -346,7 +378,7 @@ run_demo() {
     # 检查 checkpoint 是否存在
     check_checkpoints
     
-    log_info "处理视频: jiangbo-1min.mp4"
+    log_info "处理视频: $VIDEO_NAME (Deep3D 模式)"
     docker run --gpus all \
         --name "$CONTAINER_NAME" \
         -v "$HOST_INPUT_DIR:/mnt/rstab/input" \
@@ -355,19 +387,34 @@ run_demo() {
         -v "$HOST_CHECKPOINTS_DIR/MonST3R:/mnt/rstab/RStab/MonST3R/checkpoints" \
         -w /mnt/rstab \
         "$IMAGE_NAME:$IMAGE_TAG" \
-        -c "/mnt/rstab/run_rstab.sh jiangbo-1min.mp4 deep3d"
+        -c "/mnt/rstab/run_rstab.sh $VIDEO_NAME deep3d"
     
-    log_info "Demo 处理完成!"
+    log_info "处理完成!"
     log_info "输出目录: $HOST_OUTPUT_DIR"
     ls -la "$HOST_OUTPUT_DIR"
 }
 
-# 运行 demo (MonST3R 模式)
-run_demo_monst3r() {
-    log_info "运行 Demo 视频稳定化 (MonST3R 模式)..."
+# 运行视频稳定化 (MonST3R 模式)
+# 参数: $1 = 视频文件路径 (可选, 默认使用 jiangbo-1min.mp4)
+run_stabilize_monst3r() {
+    local VIDEO_PATH="$1"
+    local VIDEO_NAME
+    
     check_prerequisites
     create_directories
-    copy_demo_video
+    
+    # 确定视频文件
+    if [ -z "$VIDEO_PATH" ]; then
+        # 使用默认 demo 视频
+        copy_demo_video
+        VIDEO_NAME="jiangbo-1min.mp4"
+        log_info "使用默认 Demo 视频: $VIDEO_NAME"
+    else
+        # 使用自定义视频
+        copy_custom_video "$VIDEO_PATH"
+        VIDEO_NAME=$(basename "$VIDEO_PATH")
+        log_info "使用自定义视频: $VIDEO_NAME"
+    fi
     
     # 停止已存在的容器
     docker rm -f "$CONTAINER_NAME" 2>/dev/null || true
@@ -375,7 +422,7 @@ run_demo_monst3r() {
     # 检查 checkpoint 是否存在
     check_checkpoints_monst3r
     
-    log_info "处理视频: jiangbo-1min.mp4 (MonST3R)"
+    log_info "处理视频: $VIDEO_NAME (MonST3R 模式)"
     docker run --gpus all \
         --name "$CONTAINER_NAME" \
         -v "$HOST_INPUT_DIR:/mnt/rstab/input" \
@@ -384,9 +431,9 @@ run_demo_monst3r() {
         -v "$HOST_CHECKPOINTS_DIR/MonST3R:/mnt/rstab/RStab/MonST3R/checkpoints" \
         -w /mnt/rstab \
         "$IMAGE_NAME:$IMAGE_TAG" \
-        -c "/mnt/rstab/run_rstab.sh jiangbo-1min.mp4 monst3r"
+        -c "/mnt/rstab/run_rstab.sh $VIDEO_NAME monst3r"
     
-    log_info "Demo 处理完成!"
+    log_info "处理完成!"
     log_info "输出目录: $HOST_OUTPUT_DIR"
     ls -la "$HOST_OUTPUT_DIR"
 }
@@ -412,31 +459,32 @@ show_help() {
     echo ""
     echo "RStab Docker 自动化构建和运行脚本"
     echo ""
-    echo "用法: $0 [命令]"
+    echo "用法: $0 [命令] [视频路径]"
     echo ""
     echo "命令:"
-    echo "  build        - 构建 Docker 镜像"
-    echo "  run          - 运行 Docker 容器 (交互模式)"
-    echo "  demo         - 运行 demo 视频稳定化 (Deep3D 模式)"
-    echo "  demo-monst3r - 运行 demo 视频稳定化 (MonST3R 模式)"
-    echo "  stop         - 停止运行中的容器"
-    echo "  clean        - 删除镜像和容器"
-    echo "  help         - 显示帮助信息"
+    echo "  build                    - 构建 Docker 镜像并下载 Checkpoints"
+    echo "  run                      - 运行 Docker 容器 (交互模式, 用于调试)"
+    echo "  stabilize [视频路径]     - 运行视频稳定化 (Deep3D 模式)"
+    echo "  stabilize-monst3r [视频] - 运行视频稳定化 (MonST3R 模式)"
+    echo "  stop                     - 停止运行中的容器"
+    echo "  clean                    - 删除镜像和容器"
+    echo "  help                     - 显示帮助信息"
     echo ""
-    echo "挂载目录:"
-    echo "  输入: $HOST_INPUT_DIR -> /mnt/rstab/input"
-    echo "  输出: $HOST_OUTPUT_DIR -> /mnt/rstab/output"
-    echo "  Checkpoint: $HOST_CHECKPOINTS_DIR -> /mnt/rstab/RStab/*/pretrained|checkpoints"
+    echo "示例:"
+    echo "  $0 build                              # 构建镜像"
+    echo "  $0 stabilize                          # 使用默认 demo 视频 (jiangbo-1min.mp4)"
+    echo "  $0 stabilize /path/to/my_video.mp4   # 使用自定义视频"
+    echo "  $0 stabilize-monst3r /path/to/video  # MonST3R 模式处理自定义视频"
+    echo "  $0 run                                # 进入容器交互模式"
     echo ""
-    echo "Checkpoint 下载:"
-    echo "  RStab: https://drive.google.com/file/d/1q3QM1damtvHLukhIOIAdv9IKm646Oj11/view"
-    echo "         解压到 $HOST_CHECKPOINTS_DIR/RStab/"
-    echo "  MonST3R: https://drive.google.com/file/d/1e-2lGrnxcQXIqjOn-UoIsZnV98CvjKXa/view"
-    echo "           放到 $HOST_CHECKPOINTS_DIR/MonST3R/"
+    echo "挂载目录 (可在服务器上直接访问):"
+    echo "  输入: $HOST_INPUT_DIR"
+    echo "  输出: $HOST_OUTPUT_DIR"
+    echo "  Checkpoint: $HOST_CHECKPOINTS_DIR"
     echo ""
-    echo "在容器内运行:"
-    echo "  ./run_rstab.sh <video_name> [mode]"
-    echo "  mode: deep3d (默认) 或 monst3r"
+    echo "注意事项:"
+    echo "  - RTX 3070 (8GB) 建议处理 <30秒 的视频，避免 GPU 内存不足"
+    echo "  - 更长视频需要更大显存的 GPU (如 A10, A100)"
     echo ""
 }
 
@@ -449,11 +497,18 @@ main() {
         run)
             run_container
             ;;
+        stabilize)
+            run_stabilize "$2"
+            ;;
+        stabilize-monst3r)
+            run_stabilize_monst3r "$2"
+            ;;
+        # 保留旧命令兼容性
         demo)
-            run_demo
+            run_stabilize
             ;;
         demo-monst3r)
-            run_demo_monst3r
+            run_stabilize_monst3r
             ;;
         stop)
             stop_container
