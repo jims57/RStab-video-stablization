@@ -235,10 +235,21 @@ create_directories() {
 # 下载 RStab checkpoint
 download_rstab_checkpoint() {
     local RSTAB_DIR="$HOST_CHECKPOINTS_DIR/RStab"
+    local RSTAB_MODEL_FILE="model_255000.pth"
     
-    # 检查是否已存在
+    # 检查 model_255000.pth 是否已存在
+    if [ -f "$RSTAB_DIR/$RSTAB_MODEL_FILE" ]; then
+        local FILE_SIZE=$(stat -c%s "$RSTAB_DIR/$RSTAB_MODEL_FILE" 2>/dev/null || stat -f%z "$RSTAB_DIR/$RSTAB_MODEL_FILE" 2>/dev/null || echo "0")
+        if [ "$FILE_SIZE" -gt 1000000 ]; then
+            log_info "RStab Checkpoint 已存在: $RSTAB_DIR/$RSTAB_MODEL_FILE (大小: ${FILE_SIZE} bytes)，跳过下载"
+            return 0
+        fi
+    fi
+    
+    # 兼容旧的检查方式：检查目录中是否有任何 .pth 文件
     if [ -d "$RSTAB_DIR" ] && [ -n "$(ls -A $RSTAB_DIR/*.pth 2>/dev/null)" ]; then
-        log_info "RStab Checkpoint 已存在，跳过下载"
+        log_info "RStab Checkpoint 目录中已有 .pth 文件，跳过下载"
+        ls -la "$RSTAB_DIR"/*.pth 2>/dev/null
         return 0
     fi
     
@@ -253,20 +264,31 @@ download_rstab_checkpoint() {
     if is_china_network; then
         log_info "检测到中国网络, 使用 Google Drive 镜像下载..."
         
-        # 尝试多个 Google Drive 镜像
-        local GDRIVE_MIRRORS="https://drive.moegirl.org.cn/uc?id= https://drive.proxy.ustclug.org/uc?id= https://gdrive.sdut.me/uc?id="
-        for MIRROR in $GDRIVE_MIRRORS; do
-            log_info "尝试镜像: $MIRROR"
-            if wget --no-check-certificate "${MIRROR}${RSTAB_FILE_ID}" -O checkpoint.zip 2>/dev/null; then
+        # 尝试多个 Google Drive 镜像 (按稳定性排序)
+        # 注意: 使用完整URL格式, 不要拼接
+        local MIRROR_URLS=(
+            "https://drive.moegirl.org.cn/uc?id=${RSTAB_FILE_ID}"
+            "https://drive.proxy.ustclug.org/uc?id=${RSTAB_FILE_ID}"
+            "https://gdrive.sdut.me/uc?id=${RSTAB_FILE_ID}"
+        )
+        
+        for MIRROR_URL in "${MIRROR_URLS[@]}"; do
+            log_info "尝试镜像: $MIRROR_URL"
+            # 使用 --timeout 和 --tries 参数, 显示下载进度
+            if wget --no-check-certificate --timeout=60 --tries=2 -q --show-progress "$MIRROR_URL" -O checkpoint.zip; then
                 # 检查文件是否有效 (大于 1MB)
-                if [ -f checkpoint.zip ] && [ $(stat -c%s checkpoint.zip 2>/dev/null || stat -f%z checkpoint.zip 2>/dev/null) -gt 1000000 ]; then
-                    log_info "镜像下载成功: $MIRROR"
+                local FILE_SIZE=$(stat -c%s checkpoint.zip 2>/dev/null || stat -f%z checkpoint.zip 2>/dev/null || echo "0")
+                if [ -f checkpoint.zip ] && [ "$FILE_SIZE" -gt 1000000 ]; then
+                    log_info "镜像下载成功! 文件大小: ${FILE_SIZE} bytes"
                     DOWNLOAD_SUCCESS=true
                     break
                 else
-                    log_warn "下载文件无效, 尝试下一个镜像..."
+                    log_warn "下载文件无效 (大小: ${FILE_SIZE} bytes), 尝试下一个镜像..."
                     rm -f checkpoint.zip
                 fi
+            else
+                log_warn "wget 下载失败, 尝试下一个镜像..."
+                rm -f checkpoint.zip 2>/dev/null
             fi
         done
     fi
@@ -312,10 +334,13 @@ download_monst3r_checkpoint() {
     local MONST3R_DIR="$HOST_CHECKPOINTS_DIR/MonST3R"
     local MONST3R_FILE="MonST3R_PO-TA-S-W_ViTLarge_BaseDecoder_512_dpt.pth"
     
-    # 检查是否已存在
+    # 检查 MonST3R_PO-TA-S-W_ViTLarge_BaseDecoder_512_dpt.pth 是否已存在
     if [ -f "$MONST3R_DIR/$MONST3R_FILE" ]; then
-        log_info "MonST3R Checkpoint 已存在，跳过下载"
-        return 0
+        local FILE_SIZE=$(stat -c%s "$MONST3R_DIR/$MONST3R_FILE" 2>/dev/null || stat -f%z "$MONST3R_DIR/$MONST3R_FILE" 2>/dev/null || echo "0")
+        if [ "$FILE_SIZE" -gt 1000000 ]; then
+            log_info "MonST3R Checkpoint 已存在: $MONST3R_DIR/$MONST3R_FILE (大小: ${FILE_SIZE} bytes)，跳过下载"
+            return 0
+        fi
     fi
     
     log_info "下载 MonST3R Checkpoint..."
@@ -329,20 +354,31 @@ download_monst3r_checkpoint() {
     if is_china_network; then
         log_info "检测到中国网络, 使用 Google Drive 镜像下载..."
         
-        # 尝试多个 Google Drive 镜像
-        local GDRIVE_MIRRORS="https://drive.moegirl.org.cn/uc?id= https://drive.proxy.ustclug.org/uc?id= https://gdrive.sdut.me/uc?id="
-        for MIRROR in $GDRIVE_MIRRORS; do
-            log_info "尝试镜像: $MIRROR"
-            if wget --no-check-certificate "${MIRROR}${MONST3R_FILE_ID}" -O "$MONST3R_FILE" 2>/dev/null; then
+        # 尝试多个 Google Drive 镜像 (按稳定性排序)
+        # 注意: 使用完整URL格式, 不要拼接
+        local MIRROR_URLS=(
+            "https://drive.moegirl.org.cn/uc?id=${MONST3R_FILE_ID}"
+            "https://drive.proxy.ustclug.org/uc?id=${MONST3R_FILE_ID}"
+            "https://gdrive.sdut.me/uc?id=${MONST3R_FILE_ID}"
+        )
+        
+        for MIRROR_URL in "${MIRROR_URLS[@]}"; do
+            log_info "尝试镜像: $MIRROR_URL"
+            # 使用 --timeout 和 --tries 参数, 显示下载进度
+            if wget --no-check-certificate --timeout=60 --tries=2 -q --show-progress "$MIRROR_URL" -O "$MONST3R_FILE"; then
                 # 检查文件是否有效 (大于 1MB)
-                if [ -f "$MONST3R_FILE" ] && [ $(stat -c%s "$MONST3R_FILE" 2>/dev/null || stat -f%z "$MONST3R_FILE" 2>/dev/null) -gt 1000000 ]; then
-                    log_info "镜像下载成功: $MIRROR"
+                local FILE_SIZE=$(stat -c%s "$MONST3R_FILE" 2>/dev/null || stat -f%z "$MONST3R_FILE" 2>/dev/null || echo "0")
+                if [ -f "$MONST3R_FILE" ] && [ "$FILE_SIZE" -gt 1000000 ]; then
+                    log_info "镜像下载成功! 文件大小: ${FILE_SIZE} bytes"
                     DOWNLOAD_SUCCESS=true
                     break
                 else
-                    log_warn "下载文件无效, 尝试下一个镜像..."
+                    log_warn "下载文件无效 (大小: ${FILE_SIZE} bytes), 尝试下一个镜像..."
                     rm -f "$MONST3R_FILE"
                 fi
+            else
+                log_warn "wget 下载失败, 尝试下一个镜像..."
+                rm -f "$MONST3R_FILE" 2>/dev/null
             fi
         done
     fi
@@ -351,7 +387,8 @@ download_monst3r_checkpoint() {
     if [ "$DOWNLOAD_SUCCESS" = "false" ]; then
         log_info "尝试 gdown 下载..."
         if command -v gdown &> /dev/null && gdown --fuzzy "https://drive.google.com/file/d/${MONST3R_FILE_ID}/view" -O "$MONST3R_FILE" 2>/dev/null; then
-            if [ -f "$MONST3R_FILE" ] && [ $(stat -c%s "$MONST3R_FILE" 2>/dev/null || stat -f%z "$MONST3R_FILE" 2>/dev/null) -gt 1000000 ]; then
+            local FILE_SIZE=$(stat -c%s "$MONST3R_FILE" 2>/dev/null || stat -f%z "$MONST3R_FILE" 2>/dev/null || echo "0")
+            if [ -f "$MONST3R_FILE" ] && [ "$FILE_SIZE" -gt 1000000 ]; then
                 log_info "gdown 下载成功"
                 DOWNLOAD_SUCCESS=true
             fi
@@ -361,8 +398,9 @@ download_monst3r_checkpoint() {
     # 如果 gdown 失败, 尝试直连 wget
     if [ "$DOWNLOAD_SUCCESS" = "false" ]; then
         log_warn "gdown 下载失败，尝试直连 wget..."
-        wget --no-check-certificate "https://drive.google.com/uc?export=download&id=${MONST3R_FILE_ID}&confirm=t" -O "$MONST3R_FILE"
-        if [ -f "$MONST3R_FILE" ] && [ $(stat -c%s "$MONST3R_FILE" 2>/dev/null || stat -f%z "$MONST3R_FILE" 2>/dev/null) -gt 1000000 ]; then
+        wget --no-check-certificate --timeout=120 --tries=2 "https://drive.google.com/uc?export=download&id=${MONST3R_FILE_ID}&confirm=t" -O "$MONST3R_FILE"
+        local FILE_SIZE=$(stat -c%s "$MONST3R_FILE" 2>/dev/null || stat -f%z "$MONST3R_FILE" 2>/dev/null || echo "0")
+        if [ -f "$MONST3R_FILE" ] && [ "$FILE_SIZE" -gt 1000000 ]; then
             DOWNLOAD_SUCCESS=true
         fi
     fi
