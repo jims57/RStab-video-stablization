@@ -1,0 +1,96 @@
+    Uninstalling torch-2.0.1+cu118:
+      Successfully uninstalled torch-2.0.1+cu118
+  Attempting uninstall: torchvision
+    Found existing installation: torchvision 0.15.2+cu118
+    Uninstalling torchvision-0.15.2+cu118:
+      Successfully uninstalled torchvision-0.15.2+cu118
+
+ERROR: pip's dependency resolver does not currently take into account all the packages that are installed. This behaviour is the source of the following dependency conflicts.
+tensorflow 2.12.0 requires numpy<1.24,>=1.22, but you have numpy 1.26.4 which is incompatible.
+torchaudio 2.0.2+cu118 requires torch==2.0.1, but you have torch 2.9.1 which is incompatible.
+Successfully installed SAM-2-1.0 aiofiles-24.1.0 annotated-doc-0.0.4 annotated-types-0.7.0 antlr4-python3-runtime-4.9.3 anyio-4.12.1 argcomplete-3.6.3 brotli-1.2.0 click-8.3.1 colorama-0.4.6 einops-0.8.1 evo-1.34.2 exceptiongroup-1.3.1 fastapi-0.128.0 ffmpy-1.0.0 fsspec-2026.1.0 gradio-6.3.0 gradio-client-2.0.3 groovy-0.1.2 h11-0.16.0 hf-xet-1.2.0 httpcore-1.0.9 httpx-0.28.1 huggingface-hub-1.3.1 hydra-core-1.3.2 iopath-0.1.10 lz4-4.4.5 markdown-it-py-4.0.0 mdurl-0.1.2 natsort-8.4.0 numexpr-2.14.1 numpy-1.26.4 nvidia-cublas-cu12-12.8.4.1 nvidia-cuda-cupti-cu12-12.8.90 nvidia-cuda-nvrtc-cu12-12.8.93 nvidia-cuda-runtime-cu12-12.8.90 nvidia-cudnn-cu12-9.10.2.21 nvidia-cufft-cu12-11.3.3.83 nvidia-cufile-cu12-1.13.1.3 nvidia-curand-cu12-10.3.9.90 nvidia-cusolver-cu12-11.7.3.90 nvidia-cusparse-cu12-12.5.8.93 nvidia-cusparselt-cu12-0.7.1 nvidia-nccl-cu12-2.27.5 nvidia-nvjitlink-cu12-12.8.93 nvidia-nvshmem-cu12-3.3.20 nvidia-nvtx-cu12-12.8.90 omegaconf-2.3.0 orjson-3.11.5 portalocker-3.2.0 pydantic-2.12.5 pydantic-core-2.41.5 pydub-0.25.1 pyglet-1.5.31 pygments-2.19.2 python-multipart-0.0.21 rich-14.2.0 roma-1.5.4 rosbags-0.11.0 ruamel.yaml-0.19.1 safehttpx-0.1.7 safetensors-0.7.0 seaborn-0.13.2 semantic-version-2.10.0 shellingham-1.5.4 starlette-0.50.0 tomlkit-0.13.3 torch-2.9.1 torchvision-0.24.1 tqdm-4.67.1 trimesh-4.11.0 triton-3.5.1 typer-0.21.1 typer-slim-0.21.1 typing-extensions-4.15.0 typing-inspection-0.4.2 uvicorn-0.40.0 zstandard-0.25.0
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
+ ---> Removed intermediate container f0dbe6720d25
+ ---> 4613aa8c7986
+Step 19/27 : RUN pip install -r requirements_optional.txt || true
+ ---> Running in 22bb806d55a8
+Usage: pip [options]
+
+ERROR: Invalid requirement: waymo-open-dataset-tf-2-12-0 --no-deps
+pip: error: no such option: --no-deps
+
+ ---> Removed intermediate container 22bb806d55a8
+ ---> 9ec49db8eb0a
+Step 20/27 : RUN mkdir -p /mnt/rstab/RStab/MonST3R/checkpoints
+ ---> Running in 015c936ca946
+ ---> Removed intermediate container 015c936ca946
+ ---> 9f81e804f15c
+Step 21/27 : WORKDIR /mnt/rstab/RStab/MonST3R/croco/models/curope
+ ---> Running in 3bf8c8c10668
+ ---> Removed intermediate container 3bf8c8c10668
+ ---> 180214e05d64
+Step 22/27 : RUN python setup.py build_ext --inplace || echo "RoPE CUDA kernels compilation skipped (optional)"
+ ---> Running in 2fdf53defacb
+running build_ext
+Traceback (most recent call last):
+  File "/mnt/rstab/RStab/MonST3R/croco/models/curope/setup.py", line 18, in <module>
+    setup(
+  File "/usr/local/lib/python3.10/dist-packages/setuptools/__init__.py", line 115, in setup
+    return distutils.core.setup(**attrs)
+  File "/usr/local/lib/python3.10/dist-packages/setuptools/_distutils/core.py", line 186, in setup
+    return run_commands(dist)
+  File "/usr/local/lib/python3.10/dist-packages/setuptools/_distutils/core.py", line 202, in run_commands
+    dist.run_commands()
+  File "/usr/local/lib/python3.10/dist-packages/setuptools/_distutils/dist.py", line 1002, in run_commands
+    self.run_command(cmd)
+  File "/usr/local/lib/python3.10/dist-packages/setuptools/dist.py", line 1102, in run_command
+    super().run_command(command)
+  File "/usr/local/lib/python3.10/dist-packages/setuptools/_distutils/dist.py", line 1021, in run_command
+    cmd_obj.run()
+  File "/usr/local/lib/python3.10/dist-packages/setuptools/command/build_ext.py", line 96, in run
+    _build_ext.run(self)
+  File "/usr/local/lib/python3.10/dist-packages/setuptools/_distutils/command/build_ext.py", line 368, in run
+    self.build_extensions()
+  File "/usr/local/lib/python3.10/dist-packages/torch/utils/cpp_extension.py", line 665, in build_extensions
+    _check_cuda_version(compiler_name, compiler_version)
+  File "/usr/local/lib/python3.10/dist-packages/torch/utils/cpp_extension.py", line 520, in _check_cuda_version
+    raise RuntimeError(CUDA_MISMATCH_MESSAGE, cuda_str_version, torch.version.cuda)
+RuntimeError: ('The detected CUDA version (%s) mismatches the version that was used to compilePyTorch (%s). Please make sure to use the same CUDA versions.', '11.8', '12.8')
+RoPE CUDA kernels compilation skipped (optional)
+ ---> Removed intermediate container 2fdf53defacb
+ ---> 1933eec72f3a
+Step 23/27 : RUN mkdir -p /mnt/rstab/input /mnt/rstab/output/Deep3D /mnt/rstab/output/RStab /mnt/rstab/output/MonST3R
+ ---> Running in 3f670bdcb456
+ ---> Removed intermediate container 3f670bdcb456
+ ---> 1e32112b5cca
+Step 24/27 : WORKDIR /mnt/rstab/RStab
+ ---> Running in fac13fd471f5
+ ---> Removed intermediate container fac13fd471f5
+ ---> b7ac01be8d88
+Step 25/27 : COPY run_rstab.sh /mnt/rstab/run_rstab.sh
+ ---> e0f0245690c1
+Step 26/27 : RUN chmod +x /mnt/rstab/run_rstab.sh
+ ---> Running in 9887ec33dfa0
+ ---> Removed intermediate container 9887ec33dfa0
+ ---> 869c9fb3fc5a
+Step 27/27 : ENTRYPOINT ["/bin/bash"]
+ ---> Running in 4ece384c789f
+ ---> Removed intermediate container 4ece384c789f
+ ---> 2f6da246df2f
+Successfully built 2f6da246df2f
+Successfully tagged rstab:latest
+[INFO] Docker 镜像构建完成!
+rstab                                                                                    latest                              2f6da246df2f   Less than a second ago   33.2GB
+d.watchfun.cn/jims57/rstab                                                               v1.1.3                              fae8e617e215   2 months ago             15.5GB
+
+[WARN] ========== 重要: 需要手动下载 Checkpoint ==========
+[WARN] Google Drive 下载受限，请手动下载以下文件:
+
+1. RStab Checkpoint:
+   下载: https://drive.google.com/file/d/1q3QM1damtvHLukhIOIAdv9IKm646Oj11/view
+   解压到: /root/rstab_checkpoints/RStab/
+   (解压后应有 /root/rstab_checkpoints/RStab/*.pth 文件)
+
+2. MonST3R Checkpoint (可选, 仅当使用 MonST3R 模式时需要):
+   下载: https://drive.google.com/file/d/1e-2lGrnxcQXIqjOn-UoIsZnV98CvjKXa/view
+   放到: /root/rstab_checkpoints/MonST3R/MonST3R_PO-TA-S-W_ViTLarge_BaseDecoder_512_dpt.pth
