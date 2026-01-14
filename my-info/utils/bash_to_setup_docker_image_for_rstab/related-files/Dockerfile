@@ -18,6 +18,13 @@ ENV LD_LIBRARY_PATH=$CUDA_HOME/lib64:$LD_LIBRARY_PATH
 # 设置工作目录
 WORKDIR /mnt/rstab
 
+# 配置 Ubuntu 镜像源 (中国使用阿里云镜像)
+RUN if [ "$USE_CHINA_MIRROR" = "true" ]; then \
+        echo "配置阿里云 Ubuntu 镜像源..." && \
+        sed -i 's|http://archive.ubuntu.com|http://mirrors.aliyun.com|g' /etc/apt/sources.list && \
+        sed -i 's|http://security.ubuntu.com|http://mirrors.aliyun.com|g' /etc/apt/sources.list; \
+    fi
+
 # 安装系统依赖
 RUN apt-get update && apt-get install -y \
     git \
@@ -57,23 +64,23 @@ RUN if [ "$USE_CHINA_MIRROR" = "true" ]; then \
 # 安装 gdown 用于下载 Google Drive 文件
 RUN pip install gdown
 
-# 克隆 RStab 仓库 (使用 GitHub 镜像, 如果在中国)
-# 尝试多个镜像源: FastGit, CNPMJS, gitclone.com
-RUN if [ "$USE_CHINA_MIRROR" = "true" ]; then \
-        echo "使用 GitHub 镜像克隆 RStab..." && \
-        ( git clone https://hub.fastgit.xyz/pzzz-cv/RStab.git /mnt/rstab/RStab && echo "FastGit 成功" ) || \
-        ( rm -rf /mnt/rstab/RStab; git clone https://github.com.cnpmjs.org/pzzz-cv/RStab.git /mnt/rstab/RStab && echo "CNPMJS 成功" ) || \
-        ( rm -rf /mnt/rstab/RStab; git clone https://gitclone.com/github.com/pzzz-cv/RStab.git /mnt/rstab/RStab && echo "gitclone.com 成功" ) || \
-        ( rm -rf /mnt/rstab/RStab; git clone https://github.akams.cn/pzzz-cv/RStab.git /mnt/rstab/RStab && echo "akams 成功" ) || \
-        ( rm -rf /mnt/rstab/RStab; echo "所有镜像失败, 尝试直接克隆..."; git clone https://github.com/pzzz-cv/RStab.git /mnt/rstab/RStab ) && \
-        cd /mnt/rstab/RStab && \
-        git config --global url."https://hub.fastgit.xyz/".insteadOf "https://github.com/" && \
-        git submodule update --init --recursive || \
-        ( git config --global url."https://github.com.cnpmjs.org/".insteadOf "https://github.com/" && git submodule update --init --recursive ) || \
-        echo "submodule 更新失败, 继续..."; \
-    else \
-        git clone https://github.com/pzzz-cv/RStab.git --recursive /mnt/rstab/RStab; \
-    fi
+# 复制本地 RStab 代码 (由于 GitHub 在中国被封锁，需要预先准备代码)
+# 代码应该放在 related-files/RStab/ 目录下
+COPY RStab /mnt/rstab/RStab
+
+# 验证 RStab 代码是否存在 (关键文件检查)
+RUN echo "=== 验证 RStab 代码 ===" && \
+    ls -la /mnt/rstab/RStab/ && \
+    if [ ! -f "/mnt/rstab/RStab/Deep3D/geometry_optimizer.py" ]; then \
+        echo "错误: Deep3D/geometry_optimizer.py 不存在!" && \
+        echo "请确保 RStab 代码已放置在 related-files/RStab/ 目录下" && \
+        exit 1; \
+    fi && \
+    if [ ! -d "/mnt/rstab/RStab/RStab_core" ]; then \
+        echo "错误: RStab_core 目录不存在!" && \
+        exit 1; \
+    fi && \
+    echo "RStab 代码验证通过!"
 
 # 安装 PyTorch (兼容 CUDA 11.8, 向后兼容 11.x 和部分 12.x)
 RUN pip install torch==2.0.1+cu118 torchvision==0.15.2+cu118 torchaudio==2.0.2+cu118 --extra-index-url https://download.pytorch.org/whl/cu118

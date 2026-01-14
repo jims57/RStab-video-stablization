@@ -471,6 +471,52 @@ copy_demo_video() {
     fi
 }
 
+# 准备 RStab 代码 (由于 GitHub 在中国被封锁，需要本地准备)
+prepare_rstab_code() {
+    local RSTAB_CODE_DIR="$SCRIPT_DIR/related-files/RStab"
+    
+    # 检查 RStab 代码是否已存在
+    if [ -f "$RSTAB_CODE_DIR/Deep3D/geometry_optimizer.py" ] && [ -d "$RSTAB_CODE_DIR/RStab_core" ]; then
+        log_info "RStab 代码已存在，跳过准备"
+        return 0
+    fi
+    
+    log_info "准备 RStab 代码..."
+    
+    # 尝试从本地 GitHub 仓库复制 (如果在开发机器上)
+    local LOCAL_RSTAB_REPO="/Users/mac/Documents/GitHub/RStab-video-stablization"
+    if [ -d "$LOCAL_RSTAB_REPO/Deep3D" ] && [ -d "$LOCAL_RSTAB_REPO/RStab_core" ]; then
+        log_info "从本地仓库复制 RStab 代码..."
+        mkdir -p "$RSTAB_CODE_DIR"
+        cp -r "$LOCAL_RSTAB_REPO/Deep3D" "$RSTAB_CODE_DIR/"
+        cp -r "$LOCAL_RSTAB_REPO/RStab_core" "$RSTAB_CODE_DIR/"
+        cp -r "$LOCAL_RSTAB_REPO/MonST3R" "$RSTAB_CODE_DIR/" 2>/dev/null || true
+        cp "$LOCAL_RSTAB_REPO/requirements.txt" "$RSTAB_CODE_DIR/" 2>/dev/null || true
+        log_info "RStab 代码复制完成"
+        return 0
+    fi
+    
+    # 尝试 git clone (可能在非中国网络环境)
+    if ! is_china_network; then
+        log_info "尝试从 GitHub 克隆 RStab..."
+        rm -rf "$RSTAB_CODE_DIR"
+        if git clone --depth 1 https://github.com/pzzz-cv/RStab.git "$RSTAB_CODE_DIR"; then
+            cd "$RSTAB_CODE_DIR"
+            git submodule update --init --recursive || true
+            log_info "RStab 代码克隆完成"
+            return 0
+        fi
+    fi
+    
+    # 如果都失败，提示用户手动准备
+    log_error "无法自动准备 RStab 代码!"
+    log_error "请手动执行以下步骤:"
+    log_error "1. 在有 VPN 的机器上克隆: git clone --recursive https://github.com/pzzz-cv/RStab.git"
+    log_error "2. 将 RStab 目录上传到服务器: $RSTAB_CODE_DIR"
+    log_error "   确保包含 Deep3D/, RStab_core/, MonST3R/ 目录"
+    return 1
+}
+
 # 构建 Docker 镜像
 build_image() {
     log_info "开始构建 Docker 镜像..."
@@ -485,7 +531,20 @@ build_image() {
         log_info "网络环境正常, 无需配置镜像"
     fi
     
+    # 准备 RStab 代码
+    prepare_rstab_code || {
+        log_error "RStab 代码准备失败，无法继续构建"
+        exit 1
+    }
+    
     cd "$SCRIPT_DIR/related-files"
+    
+    # 验证 RStab 代码
+    if [ ! -f "RStab/Deep3D/geometry_optimizer.py" ]; then
+        log_error "RStab 代码不完整! 缺少 Deep3D/geometry_optimizer.py"
+        log_error "请确保 $SCRIPT_DIR/related-files/RStab/ 目录包含完整的 RStab 代码"
+        exit 1
+    fi
     
     log_info "构建镜像: $IMAGE_NAME:$IMAGE_TAG"
     if is_china_network; then
